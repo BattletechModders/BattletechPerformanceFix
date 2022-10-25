@@ -8,100 +8,99 @@ using System.Diagnostics;
 using static System.Reflection.Emit.OpCodes;
 using static BattletechPerformanceFix.Extensions;
 
-namespace BattletechPerformanceFix
+namespace BattletechPerformanceFix;
+
+class ContractLagFix : Feature
 {
-    class ContractLagFix : Feature
+    public void Activate()
     {
-        public void Activate()
-        {
-            Assembly.GetAssembly(typeof(ObjectiveRef))
-                .GetTypes()
-                //.Where(ty => ty != null && ty.BaseType != null && ty.BaseType.FullName.Contains("EncounterObjectRef"))
-                .Where(ty => ty != null && ty.BaseType != null && ty.BaseType.Name.Contains("EncounterObjectRef"))
-                .ToList()
-                .ForEach(ty =>
-                 {
-                     var meth = AccessTools.Method(ty.BaseType, "UpdateEncounterObjectRef");
-
-                     var tpatch = new HarmonyMethod(typeof(ContractLagFix), nameof(Transpile));
-                     tpatch.prioritiy = Priority.First;
-
-                     Main.harmony.Patch(meth
-                                          , new HarmonyMethod(typeof(ContractLagFix), nameof(Pre))
-                                          , new HarmonyMethod(typeof(ContractLagFix), nameof(Post))
-                                          , tpatch);
-                 });
-
-            LogDebug($"EncounterLayerData ctors {typeof(EncounterLayerData).GetConstructors().Count()}");
-            typeof(EncounterLayerData).GetConstructors()
-                .ToList()
-                .ForEach(con =>
-                    Main.harmony.Patch(con
-                                         , null, new HarmonyMethod(typeof(ContractLagFix), nameof(EncounterLayerData_Constructor))));
-
-        }
-
-        static Stopwatch sw = new Stopwatch();
-
-        public static void EncounterLayerData_Constructor(EncounterLayerData __instance)
-        {
-            eld_cache = eld_cache.Where(c => c != null).ToList();
-            eld_cache.Add(__instance);
-        }
-
-        static List<EncounterLayerData> eld_cache = new List<EncounterLayerData>();
-
-        public static EncounterLayerData CachedEncounterLayerData()
-        {
-            return Trap(() =>
+        Assembly.GetAssembly(typeof(ObjectiveRef))
+            .GetTypes()
+            //.Where(ty => ty != null && ty.BaseType != null && ty.BaseType.FullName.Contains("EncounterObjectRef"))
+            .Where(ty => ty != null && ty.BaseType != null && ty.BaseType.Name.Contains("EncounterObjectRef"))
+            .ToList()
+            .ForEach(ty =>
             {
-                var cached = eld_cache.Where(c => c != null && c.isActiveAndEnabled).FirstOrDefault();
+                var meth = AccessTools.Method(ty.BaseType, "UpdateEncounterObjectRef");
 
-                if (Main.settings.WantContractsLagFixVerify) {
-                    LogSpam("Verify ELD");
-                    var wants = UnityEngine.Object.FindObjectOfType<EncounterLayerData>();
+                var tpatch = new HarmonyMethod(typeof(ContractLagFix), nameof(Transpile));
+                tpatch.prioritiy = Priority.First;
 
-                    Trap(() => {
-                            if (cached != wants)
-                            {
-                                var inscene = UnityEngine.Object.FindObjectsOfType<EncounterLayerData>();
-                                LogError($"eld_cache is out of sync, wants: {wants?.GUID ?? "null"}");
-                                LogError($"scene contains ({string.Join(" ", inscene.Select(c => c == null ? "null" : string.Format("(:contractDefId {0} :contractDefIndex {1} :GUID {2})", c.contractDefId, c.contractDefIndex, c.GUID)).ToArray())})");
-                                LogError($"current EncounterLayerData ({string.Join(" ", eld_cache.Select(c => c == null ? "null" : string.Format("(:contractDefId {0} :contractDefIndex {1} :GUID {2})", c.contractDefId, c.contractDefIndex, c.GUID)).ToArray())})");
-                                AlertUser( "ContractsLagFix: Verify error"
-                                         , "Please report this to the BT Modding group, and include logs");
-                            }
-                        });
-                    return wants;
-                }
-
-                return cached;
+                Main.harmony.Patch(meth
+                    , new HarmonyMethod(typeof(ContractLagFix), nameof(Pre))
+                    , new HarmonyMethod(typeof(ContractLagFix), nameof(Post))
+                    , tpatch);
             });
-        }
 
-        public static IEnumerable<CodeInstruction> Transpile(IEnumerable<CodeInstruction> ins)
+        LogDebug($"EncounterLayerData ctors {typeof(EncounterLayerData).GetConstructors().Count()}");
+        typeof(EncounterLayerData).GetConstructors()
+            .ToList()
+            .ForEach(con =>
+                Main.harmony.Patch(con
+                    , null, new HarmonyMethod(typeof(ContractLagFix), nameof(EncounterLayerData_Constructor))));
+
+    }
+
+    static Stopwatch sw = new Stopwatch();
+
+    public static void EncounterLayerData_Constructor(EncounterLayerData __instance)
+    {
+        eld_cache = eld_cache.Where(c => c != null).ToList();
+        eld_cache.Add(__instance);
+    }
+
+    static List<EncounterLayerData> eld_cache = new List<EncounterLayerData>();
+
+    public static EncounterLayerData CachedEncounterLayerData()
+    {
+        return Trap(() =>
         {
-            return ins.SelectMany(i =>
+            var cached = eld_cache.Where(c => c != null && c.isActiveAndEnabled).FirstOrDefault();
+
+            if (Main.settings.WantContractsLagFixVerify) {
+                LogSpam("Verify ELD");
+                var wants = UnityEngine.Object.FindObjectOfType<EncounterLayerData>();
+
+                Trap(() => {
+                    if (cached != wants)
+                    {
+                        var inscene = UnityEngine.Object.FindObjectsOfType<EncounterLayerData>();
+                        LogError($"eld_cache is out of sync, wants: {wants?.GUID ?? "null"}");
+                        LogError($"scene contains ({string.Join(" ", inscene.Select(c => c == null ? "null" : string.Format("(:contractDefId {0} :contractDefIndex {1} :GUID {2})", c.contractDefId, c.contractDefIndex, c.GUID)).ToArray())})");
+                        LogError($"current EncounterLayerData ({string.Join(" ", eld_cache.Select(c => c == null ? "null" : string.Format("(:contractDefId {0} :contractDefIndex {1} :GUID {2})", c.contractDefId, c.contractDefIndex, c.GUID)).ToArray())})");
+                        AlertUser( "ContractsLagFix: Verify error"
+                            , "Please report this to the BT Modding group, and include logs");
+                    }
+                });
+                return wants;
+            }
+
+            return cached;
+        });
+    }
+
+    public static IEnumerable<CodeInstruction> Transpile(IEnumerable<CodeInstruction> ins)
+    {
+        return ins.SelectMany(i =>
+        {
+            if (i.opcode == Call && (i.operand as MethodInfo).Name.StartsWith("FindObjectOfType"))
             {
-                if (i.opcode == Call && (i.operand as MethodInfo).Name.StartsWith("FindObjectOfType"))
-                {
-                    i.operand = AccessTools.Method(typeof(ContractLagFix), "CachedEncounterLayerData");
-                    return Sequence(i);
-                } else
-                {
-                    return Sequence(i);
-                }
-            });
-        }
+                i.operand = AccessTools.Method(typeof(ContractLagFix), "CachedEncounterLayerData");
+                return Sequence(i);
+            } else
+            {
+                return Sequence(i);
+            }
+        });
+    }
 
-        public static void Pre()
-        {
-            sw.Start();
-        }
-        public static void Post()
-        {
-            sw.Stop();
-            //LogDebug("UpdateEncounterObjectRef {0}: {1} ms total", ct++, sw.Elapsed.TotalMilliseconds);
-        }
+    public static void Pre()
+    {
+        sw.Start();
+    }
+    public static void Post()
+    {
+        sw.Stop();
+        //LogDebug("UpdateEncounterObjectRef {0}: {1} ms total", ct++, sw.Elapsed.TotalMilliseconds);
     }
 }

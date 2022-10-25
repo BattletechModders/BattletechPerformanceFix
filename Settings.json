@@ -1,14 +1,21 @@
 {
-  "logLevel": "Debug",
+  "logLevel": "info",
   "features": {
-    "LoadFixes": true,
-    "NoSalvageSoftlock": true,
-    "MissingAssetsContinueLoad": true,
-    "DataLoaderGetEntryCheck": true,
-    "DynamicTagsFix": true,
-    "BTLightControllerThrottle": false,
-    "ShopTabLagFix": true,
-    "MDDB_InMemoryCache": true,
-    "ContractLagFix": true
-  }
+    "LocalizationPatches": false,
+    "MechLabFixFeature": true,
+    "LoadFixes": false,
+    "NoSalvageSoftlock": false,
+    "DataLoaderGetEntryCheck": false,
+    "ShopTabLagFix": false,
+    "ContractLagFix": false,
+    "EnableLoggingDuringLoads": false,
+    "ExtraLogging": false,
+    "ShaderDependencyOverride": false,
+    "DisableDeployAudio": false,
+    "RemovedFlashpointFix": false,
+    "DisableSimAnimations": false,
+    "RemovedContractsFix": false,
+    "EnableConsole": false
+  },
+  "WantContractsLagFixVerify": false
 }

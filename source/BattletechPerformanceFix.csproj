@@ -1,123 +1,79 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk" InitialTargets="ValidateBattleTechGameDir">
+  <Target Name="ValidateBattleTechGameDir" Condition="'$(BattleTechGameDir)' == '' Or !Exists('$(BattleTechGameDir)')">
+    <Error Text="BattleTechGameDir variable not set properly" />
+  </Target>
+  <PropertyGroup Condition="'$(BattletechPerformanceFixModPath)' == '' And Exists('$(BattleTechGameDir)\Mods\Core\BattletechPerformanceFix')">
+    <!-- RogueTech -->
+    <BattletechPerformanceFixModPath>$(BattleTechGameDir)\Mods\Core\BattletechPerformanceFix</BattletechPerformanceFixModPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(BattletechPerformanceFixModPath)' == '' And Exists('$(BattleTechGameDir)\Mods\BattletechPerformanceFix')">
+    <!-- flat dir -->
+    <BattletechPerformanceFixModPath>$(BattleTechGameDir)\Mods\BattletechPerformanceFix</BattletechPerformanceFixModPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(BattletechPerformanceFixModPath)' == ''">
+    <!-- sources dir -->
+    <BattletechPerformanceFixModPath>$(SolutionDir)</BattletechPerformanceFixModPath>
+  </PropertyGroup>
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{A87B849E-CC97-4E88-8BAE-33EBAA438453}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>BattletechPerformanceFix</RootNamespace>
-    <AssemblyName>BattletechPerformanceFix</AssemblyName>
-    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>embedded</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>..\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <LangVersion>default</LangVersion>
-    <Prefer32Bit>false</Prefer32Bit>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <TargetFramework>net472</TargetFramework>
+    <LangVersion>preview</LangVersion>
     <DebugType>none</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>..\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <LangVersion>default</LangVersion>
-    <Prefer32Bit>false</Prefer32Bit>
+    <DebugSymbols>false</DebugSymbols>
+    <AssemblySearchPaths>
+      $(ReferencePath);
+      {HintPathFromItem};
+      $(BattleTechGameDir)\BattleTech_Data\Managed
+    </AssemblySearchPaths>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
   </PropertyGroup>
-  <PropertyGroup>
-    <RunPostBuildEvent>Always</RunPostBuildEvent>
-  </PropertyGroup>
-  <PropertyGroup>
-    <IsWindows Condition="'$(OS)' == 'Windows_NT'">true</IsWindows>
-    <IsOSX Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</IsOSX>
-    <IsLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</IsLinux>
-    <BTechData Condition="$(IsOSX) == true">../../data/Managed/</BTechData>
-    <BTechData Condition="$(IsWindows) == true">../../BattleTech_Data/Managed/</BTechData>
-    <BTechData Condition="$(IsLinux) == true">../../BattleTech_Data/Managed/</BTechData>
-  </PropertyGroup>
+  <Target Name="CopyFilesToGame" AfterTargets="CopyFilesToOutputDirectory">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(BattletechPerformanceFixModPath)" />
+  </Target>
   <ItemGroup>
-    <Compile Include="AssemblyInfo.cs" />
-    <Compile Include="LocalizationPatches.cs" />
-    <Compile Include="HarmonyPatches.cs" />
-    <Compile Include="ContractLagFix.cs" />
-    <Compile Include="DisableSensitiveDataLogDump.cs" />
-    <Compile Include="DisableDeployAudio.cs" />
-    <Compile Include="DisableSimAnimations.cs" />
-    <Compile Include="ExtraLogging.cs" />
-    <Compile Include="Logging.cs" />
-    <Compile Include="Main.cs" />
-    <Compile Include="Extensions.cs" />
-    <Compile Include="HarmonyExt.cs" />
-    <Compile Include="DataLoaderGetEntryCheck.cs" />
-    <Compile Include="NoSalvageSoftlock.cs" />
-    <Compile Include="LazyRoomInitialization.cs" />
-    <Compile Include="LoadFixes.cs" />
-    <Compile Include="ShaderDependencyOverride.cs" />
-    <Compile Include="ShopTabLagFix.cs" />
-    <Compile Include="PatchMechLabLimitItems.cs" />
-    <Compile Include="EnableLoggingDuringLoads.cs" />
-    <Compile Include="RemovedFlashpointFix.cs" />
-    <Compile Include="RemovedContractsFix.cs" />
-    <Compile Include="EnableConsole.cs" />
-    <Compile Include="VersionManifestPatches.cs" />
+    <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.3.0" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\mod.json" />
-    <None Include="..\README.md" />
-    <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="mscorlib">
-      <HintPath>..\libs.fixed\mscorlib.dll</HintPath>
+    <Reference Include="Assembly-CSharp" Publicize="true">
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp-firstpass">
+      <Private>False</Private>
     </Reference>
     <Reference Include="0Harmony">
-      <HintPath>..\libs.fixed\0Harmony.dll</HintPath>
+      <Private>False</Private>
     </Reference>
-    <Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\libs.fixed\Assembly-CSharp.dll</HintPath>
+    <Reference Include="System">
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Core">
+      <Private>False</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json">
-      <HintPath>..\libs.fixed\Newtonsoft.Json.dll</HintPath>
+      <Private>False</Private>
     </Reference>
-    <Reference Include="RSG.Promise, Version=3.0.1.0, Culture=neutral, PublicKeyToken=7019fe0722eef3a4, processorArchitecture=MSIL">
-      <HintPath>packages\RSG.Promise.3.0.1\lib\net35\RSG.Promise.dll</HintPath>
+    <Reference Include="Unity.TextMeshPro">
+      <Private>False</Private>
     </Reference>
-    <Reference Include="System" />
     <Reference Include="UnityEngine">
-      <HintPath>..\libs.fixed\UnityEngine.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.AssetBundleModule">
-      <HintPath>..\libs.fixed\UnityEngine.AssetBundleModule.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>..\libs.fixed\UnityEngine.CoreModule.dll</HintPath>
+      <Private>False</Private>
     </Reference>
-    <Reference Include="UnityEngine.ImageConversionModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\libs.fixed\UnityEngine.ImageConversionModule.dll</HintPath>
+    <Reference Include="UnityEngine.ImageConversionModule">
+      <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.UI">
-      <HintPath>..\libs.fixed\UnityEngine.UI.dll</HintPath>
+      <Private>False</Private>
     </Reference>
   </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PostBuildEvent Condition="$(IsWindows) == true">xcopy /Y "$(TargetDir)$(TargetName).dll" "$(SolutionDir)../../Mods/BattletechPerformanceFix\"</PostBuildEvent>
-    <PostBuildEvent Condition="$(IsLinux) == true">yes | cp "$(TargetDir)$(TargetName).dll" "$(SolutionDir)../../Mods/BattletechPerformanceFix/$(TargetName).dll"</PostBuildEvent>
-    <PostBuildEvent Condition="$(IsOSX) == true">yes | cp "$(TargetDir)$(TargetName).dll" "$(SolutionDir)../../Mods/BattletechPerformanceFix/$(TargetName).dll"</PostBuildEvent>
-  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="GitVersion.MsBuild" Version="5.10.1">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
 </Project>
