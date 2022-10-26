@@ -1,13 +1,21 @@
 using System;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Reflection.Emit;
 using BattleTech;
 using BattleTech.UI;
 using Harmony;
+using UnityEngine;
 using static BattletechPerformanceFix.Extensions;
+using Object = UnityEngine.Object;
 
 namespace BattletechPerformanceFix.MechLabFix;
 
 public class MechLabFixFeature : Feature {
     public void Activate() {
+        "InitWidgets".Transpile<MechLabPanel>();
+        "InitWidgets".Pre<MechLabPanel>();
+        "OnPooled".Post<MechLabPanel>();
         "PopulateInventory".Pre<MechLabPanel>();
         "ExitMechLab".Pre<MechLabPanel>();
         "LateUpdate".Pre<UnityEngine.UI.ScrollRect>();
@@ -22,6 +30,63 @@ public class MechLabFixFeature : Feature {
         "OnDestroy".Pre<InventoryItemElement_NotListView>(iel => { if(iel.iconMech != null) iel.iconMech.sprite = null;
             return false; });
     }
+
+#region fix for unused shop clones
+    public static IEnumerable<CodeInstruction> InitWidgets_Transpile(IEnumerable<CodeInstruction> instructions)
+    {
+        var to = AccessTools.Method(typeof(MechLabFixFeature), nameof(CreateUIModule));
+
+        foreach (var instruction in instructions)
+        {
+            if (instruction.operand is MethodBase method && method.Name == nameof(CreateUIModule))
+            {
+                instruction.opcode = OpCodes.Call;
+                instruction.operand = to;
+            }
+            yield return instruction;
+        }
+    }
+
+    public static SG_Shop_Screen CreateUIModule(UIManager uiManager, string prefabOverride = "", bool resort = true)
+    {
+        return uiManager.GetOrCreateUIModule<SG_Shop_Screen>(prefabOverride, resort);
+    }
+
+    public static void InitWidgets_Pre(MechLabPanel __instance)
+    {
+        if (__instance.Shop != null)
+        {
+            __instance.Shop.Pool();
+        }
+    }
+
+#endregion
+    
+#region fix for accumulating inventory elements by cleaning the pool and loose objects while excluding the prefab
+    public static void OnPooled_Post(MechLabPanel __instance)
+    {
+        var prefabCache = __instance.dataManager.GameObjectPool;
+        var prefabName = ListElementController_BASE_NotListView.INVENTORY_ELEMENT_PREFAB_NotListView;
+
+        prefabCache.prefabPool.TryGetValue(prefabName, out var prefab);
+        if (prefabCache.gameObjectPool.TryGetValue(prefabName, out var linkedList))
+        {
+            foreach (var @object in linkedList)
+            {
+                Object.Destroy(@object);
+            }
+            linkedList.Clear();
+        }
+
+        foreach (var component in Resources.FindObjectsOfTypeAll<InventoryItemElement_NotListView>())
+        {
+            if (component.gameObject != prefab)
+            {
+                Object.Destroy(component.gameObject);
+            }
+        }
+    }
+#endregion
 
     public static PatchMechlabLimitItems state;
 
