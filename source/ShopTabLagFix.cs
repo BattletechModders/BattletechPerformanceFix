@@ -13,8 +13,8 @@ public class ShopTabLagFix : Feature
         var aiti = Main.CheckPatch(AccessTools.Method(typeof(MechLabInventoryWidget_ListView), nameof(MechLabInventoryWidget_ListView.AddItemToInventory))
             , "204c93ea7a8f7474dd1e185f3b99a3da63c0d0bbd44eeb94a1378a9f1ae9938e");
 
-        Main.harmony.Patch(asi, null, new HarmonyMethod(AccessTools.Method(typeof(ShopTabLagFix), nameof(OnlySortAtEnd))));
-        Main.harmony.Patch(aiti, new HarmonyMethod(AccessTools.Method(typeof(ShopTabLagFix), nameof(AddItemToInventory))));
+        Main.harmony.Patch(asi, null, new(AccessTools.Method(typeof(ShopTabLagFix), nameof(OnlySortAtEnd))));
+        Main.harmony.Patch(aiti, new(AccessTools.Method(typeof(ShopTabLagFix), nameof(AddItemToInventory))));
 
     }
 
@@ -33,7 +33,7 @@ public class ShopTabLagFix : Feature
         var _this = __instance;
         var _items = _this.ListView.Items;
         InventoryDataObject_BASE listElementController_BASE = null;
-        foreach (InventoryDataObject_BASE listElementController_BASE2 in _this.inventoryData)
+        foreach (var listElementController_BASE2 in _this.inventoryData)
         {
             if (listElementController_BASE2.GetItemType() == ItemData.GetItemType() && listElementController_BASE2.IsDuplicateContent(ItemData) && _this.ParentDropTarget != null && _this.StackQuantities)
             {

@@ -15,7 +15,7 @@ namespace BattletechPerformanceFix;
 
 public static partial class Extensions {
     public static void AlertUser(string title, string message) {
-        GenericPopupBuilder genericPopupBuilder = GenericPopupBuilder.Create(title, message);
+        var genericPopupBuilder = GenericPopupBuilder.Create(title, message);
         genericPopupBuilder.Render();
     }
 
@@ -35,7 +35,7 @@ public static partial class Extensions {
         try {
             return f();
         } catch (Exception e) {
-            LogError(string.Format("PANIC {0} {1}", msg, e));
+            LogError($"PANIC {msg} {e}");
             TerminateImmediately();
             return default(T);
         }
@@ -53,7 +53,7 @@ public static partial class Extensions {
     }
 
     public static T ThrowIfNull<T>(this T t, string msg) {
-        if (t == null) throw new System.Exception($"{msg} from {new StackTrace(1).ToString()}");
+        if (t == null) throw new($"{msg} from {new StackTrace(1).ToString()}");
         return t;
     }
             
@@ -128,19 +128,19 @@ public static partial class Extensions {
     public static T Let<T>(this T t, Func<T,T> f) => f(t);
     public static void Let<T>(this T t, Action<T> f) => f(t);
 
-    public static HarmonyMethod Drop = new HarmonyMethod(AccessTools.Method(typeof(Extensions), nameof(__Drop)));
+    public static HarmonyMethod Drop = new(AccessTools.Method(typeof(Extensions), nameof(__Drop)));
     public static bool  __Drop() {
         //LogDebug($"Dropping call to {new StackFrame(1).ToString()}");
         return false;
     }
 
-    public static HarmonyMethod Yes = new HarmonyMethod(AccessTools.Method(typeof(Extensions), nameof(__Yes)));
+    public static HarmonyMethod Yes = new(AccessTools.Method(typeof(Extensions), nameof(__Yes)));
     public static bool  __Yes(ref bool __result) {
         LogDebug($"Saying yes to to {new StackFrame(1).ToString()}");
         __result = true;
         return false;
     }
-    public static HarmonyMethod No = new HarmonyMethod(AccessTools.Method(typeof(Extensions), nameof(__No)));
+    public static HarmonyMethod No = new(AccessTools.Method(typeof(Extensions), nameof(__No)));
     public static bool  __No(ref bool __result) {
         LogDebug($"Saying no to to {new StackFrame(1).ToString()}");
         __result = false;
@@ -210,9 +210,9 @@ public static partial class Extensions {
         var key = meth.DeclaringType.FullName + "::" + meth.Name;
         __PreDB[key] = v => f(v.SafeCast<T>());
         Main.harmony.Patch( meth
-            , new HarmonyMethod(typeof(Extensions), nameof(__Pre)));
+            , new(typeof(Extensions), nameof(__Pre)));
     }
-    public static Dictionary<string,Func<object,bool>> __PreDB = new Dictionary<string,Func<object,bool>>();
+    public static Dictionary<string,Func<object,bool>> __PreDB = new();
     public static bool __Pre(object __instance) {
         var sf = new StackFrame(1).GetMethod();
         var name = sf.Name;
@@ -221,7 +221,7 @@ public static partial class Extensions {
         return __PreDB[key](__instance);
     }
 
-    public static Dictionary<string,string> LoadDesc = new Dictionary<string,string>();
+    public static Dictionary<string,string> LoadDesc = new();
 }
 
 class BPF_CoroutineInvoker : UnityEngine.MonoBehaviour {

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using BattleTech;
@@ -7,7 +8,6 @@ using BattleTech.UI;
 using Harmony;
 using UnityEngine;
 using static BattletechPerformanceFix.Extensions;
-using Object = UnityEngine.Object;
 
 namespace BattletechPerformanceFix.MechLabFix;
 
@@ -15,10 +15,9 @@ internal class MechLabFixFeature : Feature {
     public void Activate() {
         "InitWidgets".Transpile<MechLabPanel>();
         "InitWidgets".Pre<MechLabPanel>();
-        "OnPooled".Pre<MechLabPanel>();
-        "OnPooled".Post<MechLabPanel>();
         "PopulateInventory".Pre<MechLabPanel>();
         "LateUpdate".Pre<UnityEngine.UI.ScrollRect>();
+        "ClearInventory".Pre<MechLabInventoryWidget>();
         "OnAddItem".Pre<MechLabInventoryWidget>();
         "OnRemoveItem".Pre<MechLabInventoryWidget>();
         "OnItemGrab".Pre<MechLabInventoryWidget>();
@@ -73,88 +72,42 @@ internal class MechLabFixFeature : Feature {
 
 #endregion
 
-internal static MechLabFixState state;
+    internal static MechLabFixState state;
 
     public static bool PopulateInventory_Pre(MechLabPanel __instance)
     {
         LogDebug("[LimitItems] PopulateInventory_Pre");
-        try {
-            if (state != null)
-            {
-                LogInfo("[LimitItems] state.Dispose");
-                state.Dispose();
-                state = null;
-            }
-            state = new MechLabFixState(__instance);
+        // return;
+        try
+        {
+            MechLabFixState.GameObjects.Setup(__instance.inventoryWidget);
+            state = new(__instance);
         } catch(Exception e) {
             LogException(e);
         }
         return false;
     }
 
-    // TODO make the patch a component so we can avoid pooling here
-    public static void OnPooled_Pre()
+    public static void ClearInventory_Pre(MechLabInventoryWidget __instance)
     {
-        LogDebug("[LimitItems] OnPooled_Pre");
-        return;
-        if (state == null)
-        {
-            LogError("[LimitItems] Unhandled OnPooled");
-            return;
-        }
-
-        LogDebug("[LimitItems] Pooled mechlab");
+        LogDebug("[LimitItems] ClearInventory_Pre");
         try
         {
-            state?.Dispose();
-            state = null;
-        }
-        catch (Exception e)
-        {
+            LogDebug($"inventoryCount={__instance.localInventory?.Count}");
+            foreach (var iie in __instance.localInventory)
+            {
+                // fix NRE within Pool()
+                iie.controller = new ListElementController_InventoryGear_NotListView();
+                iie.controller.dataManager = iie.dataManager = UnityGameInstance.BattleTechGame.DataManager;
+                iie.controller.ItemWidget = iie;
+            }
+        } catch(Exception e) {
             LogException(e);
         }
-    }
-
-    public static void OnPooled_Post(MechLabPanel __instance){
-        LogDebug("[LimitItems] OnPooled_Post");
-        // return;
-        try
-        {
-            state?.Dispose();
-            state = null;
-        }
-        catch (Exception e)
-        {
-            LogException(e);
-        }
-        return;
-#region fix for accumulating inventory elements by cleaning the pool and loose objects while excluding the prefab
-        var prefabCache = __instance.dataManager.GameObjectPool;
-        var prefabName = ListElementController_BASE_NotListView.INVENTORY_ELEMENT_PREFAB_NotListView;
-
-        prefabCache.prefabPool.TryGetValue(prefabName, out var prefab);
-        if (prefabCache.gameObjectPool.TryGetValue(prefabName, out var linkedList))
-        {
-            foreach (var @object in linkedList)
-            {
-                Object.DestroyImmediate(@object);
-            }
-            linkedList.Clear();
-        }
-
-        foreach (var component in Resources.FindObjectsOfTypeAll<InventoryItemElement_NotListView>())
-        {
-            if (component.transform.parent == null && component.gameObject != prefab)
-            {
-                Object.DestroyImmediate(component.gameObject);
-            }
-        }
-#endregion
     }
 
     public static void LateUpdate_Pre(UnityEngine.UI.ScrollRect __instance)
     {
-        LogDebug("[LimitItems] LateUpdate_Pre");
         try
         {
             if (state != null && state.inventoryWidget.scrollbarArea == __instance) {
@@ -211,9 +164,8 @@ internal static MechLabFixState state;
                 LogException(e);
             }
             return false;
-        } else {
-            return true;
         }
+        return true;
     }
 
     public static bool OnRemoveItem_Pre(MechLabInventoryWidget __instance, IMechLabDraggableItem item)
@@ -240,9 +192,8 @@ internal static MechLabFixState state;
                 LogException(e);
             }
             return false;
-        } else {
-            return true;
         }
+        return true;
     }
 
     public static bool ApplyFiltering_Pre(MechLabInventoryWidget __instance, bool refreshPositioning)
@@ -274,7 +225,7 @@ internal static MechLabFixState state;
                 // it's a mechlab screen, we do our own sort.
                 var _cs = __instance.currentSort;
                 var cst = _cs.Method;
-                LogDebug($"OnApplySorting using {cst.DeclaringType.FullName}::{cst.ToString()}");
+                LogDebug($"OnApplySorting using {cst.DeclaringType.FullName}::{cst}");
                 state.FilterChanged(false);
                 return false;
             } else {
@@ -291,16 +242,19 @@ internal static MechLabFixState state;
     public static bool MechCanEquipItem_Pre(InventoryItemElement_NotListView item)
     {
         LogDebug("[LimitItems] MechCanEquipItem_Pre");
-        return item.ComponentRef == null ? false : true;
+        // undo NRE pool fix
+        if (item.controller != null && item.controller.componentDef == null)
+        {
+            item.controller = null;
+        }
+        return item.ComponentRef != null;
     }
 
     public static void OnItemGrab_Pre(MechLabInventoryWidget __instance, ref IMechLabDraggableItem item) {
         LogDebug("[LimitItems] OnItemGrab_Pre");
         if (state != null && state.inventoryWidget == __instance) {
             try {
-                LogDebug("OnItemGrab");
                 var nlv = item as InventoryItemElement_NotListView;
-                // TODO MEMORY LEAK!!!!!!!!!!
                 var iw = state.instance.dataManager
                     .PooledInstantiate(ListElementController_BASE_NotListView.INVENTORY_ELEMENT_PREFAB_NotListView, BattleTechResourceType.UIModulePrefabs)
                     .GetComponent<InventoryItemElement_NotListView>();
@@ -313,7 +267,6 @@ internal static MechLabFixState state;
                 lec.SetupLook(iw);
                 iw.gameObject.SetActive(true);
                 item = iw;
-                Object.DestroyImmediate(nlv);
             } catch(Exception e) {
                 LogException(e);
             }

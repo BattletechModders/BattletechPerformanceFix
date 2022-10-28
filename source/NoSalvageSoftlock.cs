@@ -12,17 +12,17 @@ public class NoSalvageSoftlock : Feature
         var hap = Main.CheckPatch(AccessTools.Method(typeof(AAR_SalvageChosen), nameof(AAR_SalvageChosen.HasAllPriority))
             , "80d43f27b8537a10099fd1ebceb4b6961549f30518c00de53fcf38c27623f7ec");
         Main.harmony.Patch(hap
-            , new HarmonyMethod(typeof(NoSalvageSoftlock), nameof(NoSalvageSoftlock.HasAllPriority)), null);
+            , new(typeof(NoSalvageSoftlock), nameof(NoSalvageSoftlock.HasAllPriority)), null);
     }
 
     public static bool HasAllPriority(AAR_SalvageChosen __instance, ref bool __result)
     {
         try
         {
-            int negotiated = __instance.contract.FinalPrioritySalvageCount;
-            int totalSalvageMadeAvailable = __instance.parent.TotalSalvageMadeAvailable;
-            int count = __instance.PriorityInventory.Count;
-            int num = negotiated;
+            var negotiated = __instance.contract.FinalPrioritySalvageCount;
+            var totalSalvageMadeAvailable = __instance.parent.TotalSalvageMadeAvailable;
+            var count = __instance.PriorityInventory.Count;
+            var num = negotiated;
             if (num > totalSalvageMadeAvailable)
             {
                 num = totalSalvageMadeAvailable;
@@ -31,7 +31,8 @@ public class NoSalvageSoftlock : Feature
             {
                 num = 7;
             }
-            LogDebug(string.Format("HasAllPriority :negotiated {0} :available {1} :selected {2} :clamped {3}", negotiated, totalSalvageMadeAvailable, count, num));
+            LogDebug(
+                $"HasAllPriority :negotiated {negotiated} :available {totalSalvageMadeAvailable} :selected {count} :clamped {num}");
             __result = count >= num;
             return false;
         } catch (Exception e)

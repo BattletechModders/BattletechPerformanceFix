@@ -23,7 +23,7 @@ public class LoadFixes : Feature
                 var strip = Main.CheckPatch( AccessTools.Method(typeof(HBS.Util.JSONSerializationUtility), "StripHBSCommentsFromJSON")
                     , "29006a2218c101f065bd70c30d7147495d0101799a09fe72e4d969f92a1d90fd");
                 Main.harmony.Patch( strip
-                    , new HarmonyMethod(typeof(DontStripComments).GetMethod(nameof(DontStripComments.Prefix)))
+                    , new(typeof(DontStripComments).GetMethod(nameof(DontStripComments.Prefix)))
                     , null);
             });
         }
@@ -39,18 +39,18 @@ public class DontStripComments {
             var self = new Traverse(typeof(HBS.Util.JSONSerializationUtility));
             var csp = self.Field("commentSurroundPairs").GetValue<Dictionary<string,string>>();
 
-            string str = string.Empty;
-            string format = "{0}(.*?)\\{1}";
-            foreach (KeyValuePair<string, string> keyValuePair in csp)
+            var str = string.Empty;
+            var format = "{0}(.*?)\\{1}";
+            foreach (var keyValuePair in csp)
             {
                 str = str + string.Format(format, keyValuePair.Key, keyValuePair.Value) + "|";
             }
-            string str2 = "\"((\\\\[^\\n]|[^\"\\n])*)\"|";
-            string str3 = "@(\"[^\"]*\")+";
-            string pattern = str + str2 + str3;
+            var str2 = "\"((\\\\[^\\n]|[^\"\\n])*)\"|";
+            var str3 = "@(\"[^\"]*\")+";
+            var pattern = str + str2 + str3;
             return Regex.Replace(json, pattern, delegate (Match me)
             {
-                foreach (KeyValuePair<string, string> keyValuePair2 in csp)
+                foreach (var keyValuePair2 in csp)
                 {
                     if (me.Value.StartsWith(keyValuePair2.Key) || me.Value.EndsWith(keyValuePair2.Value))
                     {
@@ -82,7 +82,7 @@ public class DontStripComments {
         {
             var sc = StripComments(json);
             if (sc == null)
-                throw new System.Exception("StripComments result is null");
+                throw new("StripComments result is null");
             return sc;
         });
         __result = res;

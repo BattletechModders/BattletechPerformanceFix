@@ -19,6 +19,8 @@ namespace BattletechPerformanceFix.MechLabFix;
    The user only sees 8 items at once, and they're expensive to create, so only make 8 of them.
 */
 internal class MechLabFixState {
+    internal static MechLabFixGameObjects GameObjects = new();
+
     public MechLabPanel instance;
     public MechLabInventoryWidget inventoryWidget;
 
@@ -29,55 +31,49 @@ internal class MechLabFixState {
     public int index = 0;
     public int endIndex = 0;
 
-    private MechLabFixGameObjects GameObjects = new();
-
     public MechLabFixState(MechLabPanel instance) {
         var sw = new Stopwatch();
         sw.Start();
         this.instance = instance;
-        inventoryWidget = instance.inventoryWidget.LogIfNull("inventoryWidget is null");
+        inventoryWidget = instance.inventoryWidget;
 
         Extensions.LogDebug($"StorageInventory contains {instance.storageInventory.Count}");
 
         if (instance.IsSimGame) {
-            instance.originalStorageInventory = instance.storageInventory.LogIfNull("storageInventory is null");
+            instance.originalStorageInventory = instance.storageInventory;
         }
 
         Extensions.LogDebug($"Mechbay Patch initialized :simGame? {instance.IsSimGame}");
 
         List<ListElementController_BASE_NotListView> BuildRawInventory()
             => instance.storageInventory.Select<MechComponentRef, ListElementController_BASE_NotListView>(componentRef => {
-                Extensions.LogIfNull<MechComponentRef>(componentRef, "componentRef is null");
-                componentRef.DataManager = instance.dataManager.LogIfNull("(MechLabPanel instance).dataManager is null");
+                componentRef.DataManager = instance.dataManager;
                 componentRef.RefreshComponentDef();
-                Extensions.LogIfNull<MechComponentDef>(componentRef.Def, "componentRef.Def is null");
                 var count = (!instance.IsSimGame
                     ? int.MinValue
                     : instance.sim.GetItemCount((DescriptionDef)componentRef.Def.Description, componentRef.Def.GetType(), instance.sim.GetItemCountDamageType(componentRef)));
 
                 if (componentRef.ComponentDefType == ComponentType.Weapon) {
-                    ListElementController_InventoryWeapon_NotListView controller = new ListElementController_InventoryWeapon_NotListView();
+                    var controller = new ListElementController_InventoryWeapon_NotListView();
                     controller.InitAndFillInSpecificWidget(componentRef, null, instance.dataManager, null, count, false);
                     return controller;
                 } else {
-                    ListElementController_InventoryGear_NotListView controller = new ListElementController_InventoryGear_NotListView();
+                    var controller = new ListElementController_InventoryGear_NotListView();
                     controller.InitAndFillInSpecificWidget(componentRef, null, instance.dataManager, null, count, false);
                     return controller;
                 }
             }).ToList();
         /* Build a list of data only for all components. */
         rawInventory = Sort(BuildRawInventory());
-        GameObjects.Create();
-        GameObjects.Setup(inventoryWidget);
         // End
-        Extensions.LogDebug(string.Format("[LimitItems] inventory cached in {0} ms", sw.Elapsed.TotalMilliseconds));
+        Extensions.LogDebug($"[LimitItems] inventory cached in {sw.Elapsed.TotalMilliseconds} ms");
 
         FilterChanged();
     }
 
     public ListElementController_BASE_NotListView FetchItem(MechComponentRef mcr)
     {
-        return rawInventory.Where(ri => ri.componentDef == mcr.Def && mcr.DamageLevel == GetRef(ri).DamageLevel).FirstOrDefault();
+        return rawInventory.FirstOrDefault(ri => ri.componentDef == mcr.Def && mcr.DamageLevel == GetRef(ri).DamageLevel);
     }
 
     public MechLabDraggableItemType ToDraggableType(MechComponentDef def) {
@@ -111,7 +107,7 @@ internal class MechLabFixState {
         _bc.controller = _b;
         var _cs = inventoryWidget.currentSort;
         var cst = _cs.Method;
-        Extensions.LogDebug(string.Format("Sort using {0}::{1}", cst.DeclaringType.FullName, cst.ToString()));
+        Extensions.LogDebug($"Sort using {cst.DeclaringType.FullName}::{cst.ToString()}");
 
         var tmp = items.ToList();
         tmp.Sort(new Comparison<ListElementController_BASE_NotListView>((l,r) => {
@@ -132,7 +128,7 @@ internal class MechLabFixState {
         UnityEngine.Object.Destroy(go2);
 
         var delta = sw.Elapsed.TotalMilliseconds;
-        Extensions.LogInfo(string.Format("Sorted in {0} ms", delta));
+        Extensions.LogInfo($"Sorted in {delta} ms");
 
         Extensions.LogSpam($"Sorted: {tmp.Select(item => GetRef(item).ComponentDefID).ToArray().Dump(false)}");
 
@@ -179,7 +175,7 @@ internal class MechLabFixState {
                     tmpctl.componentDef = def;
                     break;
             }
-            Func<string> Summary = () =>
+            var Summary = () =>
             {
                 var o = "";
                 o += "filteringWeapons? " + inventoryWidget.filteringWeapons + "\n";
@@ -204,7 +200,8 @@ internal class MechLabFixState {
 
             var yes = Extensions.Trap(() => filter.Execute(Enumerable.Repeat(tmpctl, 1)).Any()
                 ,() => { Extensions.LogError($"Filtering failed\n{Summary()}\n\n"); return false; });
-            if (!yes) Extensions.LogDebug(string.Format("[Filter] Removing :id {0} :componentType {1} :quantity {2}", def.Description.Id, def.ComponentType, item.quantity));
+            if (!yes) Extensions.LogDebug(
+                $"[Filter] Removing :id {def.Description.Id} :componentType {def.ComponentType} :quantity {item.quantity}");
             return yes;
         }).ToList();
         return current;
@@ -264,15 +261,13 @@ internal class MechLabFixState {
                 filterGuard = false;
                 lec.ItemWidget = null;
                 var yes = iw.gameObject.activeSelf == true;
-                if (!yes) Extensions.LogDebug(string.Format( "[FilterUsingHBSCode] Removing :id {0} :componentType {1} :quantity {2} :tonnage {3}"
-                    , lec.componentDef.Description.Id
-                    , lec.componentDef.ComponentType
-                    , lec.quantity
-                    , (inventoryWidget.ParentDropTarget as MechLabPanel)?.activeMechDef?.Chassis?.Tonnage));
+                if (!yes) Extensions.LogDebug(
+                    $"[FilterUsingHBSCode] Removing :id {lec.componentDef.Description.Id} :componentType {lec.componentDef.ComponentType} :quantity {lec.quantity} :tonnage {(inventoryWidget.ParentDropTarget as MechLabPanel)?.activeMechDef?.Chassis?.Tonnage}");
                 return yes;
             }).ToList();
             inventoryWidget.localInventory = tmp;
-            Extensions.LogInfo(string.Format("Filter took {0} ms and resulted in {1} -> {2} items", sw.Elapsed.TotalMilliseconds, items.Count, okItems.Count));
+            Extensions.LogInfo(
+                $"Filter took {sw.Elapsed.TotalMilliseconds} ms and resulted in {items.Count} -> {okItems.Count} items");
 
             return okItems;
         } catch (Exception e) {
@@ -282,8 +277,8 @@ internal class MechLabFixState {
     }
 
     public MechComponentRef GetRef(ListElementController_BASE_NotListView lec) {
-        if (lec is ListElementController_InventoryWeapon_NotListView) return (lec as ListElementController_InventoryWeapon_NotListView).componentRef;
-        if (lec is ListElementController_InventoryGear_NotListView) return (lec as ListElementController_InventoryGear_NotListView).componentRef;
+        if (lec is ListElementController_InventoryWeapon_NotListView lecIw) return lecIw.componentRef;
+        if (lec is ListElementController_InventoryGear_NotListView lecIg) return lecIg.componentRef;
         Extensions.LogError("[LimitItems] lec is not gear or weapon: " + lec.GetId());
         return null;
     }
@@ -316,7 +311,7 @@ internal class MechLabFixState {
     }
 
     public void Refresh(bool wantClobber = true) {
-        Extensions.LogDebug(string.Format("[LimitItems] Refresh: {0} {1} {2} {3}", index, filteredInventory.Count, itemLimit, inventoryWidget.scrollbarArea.verticalNormalizedPosition));
+        Extensions.LogDebug($"[LimitItems] Refresh: {index} {filteredInventory.Count} {itemLimit} {inventoryWidget.scrollbarArea.verticalNormalizedPosition}");
         if (index > filteredInventory.Count - itemsOnScreen) {
             index = filteredInventory.Count - itemsOnScreen;
         }
@@ -326,38 +321,13 @@ internal class MechLabFixState {
         if (index < 0) {
             index = 0;
         }
-        if (Extensions.Spam) Extensions.LogSpam(string.Format("[LimitItems] Refresh(F): {0} {1} {2} {3}", index, filteredInventory.Count, itemLimit, inventoryWidget.scrollbarArea.verticalNormalizedPosition));
+        if (Extensions.Spam) Extensions.LogSpam(
+            $"[LimitItems] Refresh(F): {index} {filteredInventory.Count} {itemLimit} {inventoryWidget.scrollbarArea.verticalNormalizedPosition}");
 
-        Func<ListElementController_BASE_NotListView, string> pp = lec => {
-            return string.Format("[id:{0},damage:{1},quantity:{2},id:{3}]"
-                , GetRef(lec).ComponentDefID
-                , GetRef(lec).DamageLevel
-                , lec.quantity
-                , lec.GetId());
-        };
-
-        var iw_corrupted_add = inventoryWidget.localInventory.Where(x => !GameObjects.ielCache.Contains(x)).ToList();
-        if (iw_corrupted_add.Count > 0)
-        {
-            Extensions.LogError("inventoryWidget has been corrupted, items were added directly: " + string.Join(", ", iw_corrupted_add.Select(c => c.controller).Select(pp).ToArray()));
-        }
-        var iw_corrupted_remove = GameObjects.ielCache.Where(x => !inventoryWidget.localInventory.Contains(x)).ToList();
-        if (iw_corrupted_remove.Count > 0)
-        {
-            Extensions.LogError("inventoryWidget has been corrupted, iel elements were removed.");
-        }
-
-        if (iw_corrupted_add.Any() || iw_corrupted_remove.Any())
-        {
-            Extensions.LogWarning("Restoring to last good state. Duplication or item loss may occur.");
-            inventoryWidget.localInventory = GameObjects.ielCache.ToArray().ToList();
-        }
+        Func<ListElementController_BASE_NotListView, string> pp = lec => $"[id:{GetRef(lec).ComponentDefID},damage:{GetRef(lec).DamageLevel},quantity:{lec.quantity},id:{lec.GetId()}]";
 
         var toShow = filteredInventory.Skip(index).Take(itemLimit).ToList();
-
         var icc = GameObjects.ielCache.ToList();
-
-            
 
         if (Extensions.Spam) Extensions.LogSpam("[LimitItems] Showing: " + string.Join(", ", toShow.Select(pp).ToArray()));
 
@@ -372,7 +342,8 @@ internal class MechLabFixState {
             iw.SetData(lec, inventoryWidget, lec.quantity, false, null);
             lec.SetupLook(iw);
             iw.gameObject.SetActive(true);
-            details.Insert(0, string.Format("enabled {0} {1}", iw.ComponentRef.ComponentDefID, iw.GetComponent<UnityEngine.RectTransform>().anchoredPosition));
+            details.Insert(0,
+                $"enabled {iw.ComponentRef.ComponentDefID} {iw.GetComponent<UnityEngine.RectTransform>().anchoredPosition}");
         });
         icc.ForEach(unused => unused.gameObject.SetActive(false));
 
@@ -383,42 +354,27 @@ internal class MechLabFixState {
             
         var virtualStartSize = tsize * index - spacerHalf;
         GameObjects.DummyStart.gameObject.SetActive(index > 0); //If nothing prefixing, must disable to prevent halfspacer offset.
-        GameObjects.DummyStart.sizeDelta = new UnityEngine.Vector2(100, virtualStartSize);
+        GameObjects.DummyStart.sizeDelta = new(100, virtualStartSize);
         GameObjects.DummyStart.SetAsFirstSibling();
 
         var itemsHanging = filteredInventory.Count - (index + GameObjects.ielCache.Count(ii => ii.gameObject.activeSelf));
 
-        var ap1 = GameObjects.ielCache[0].GetComponent<UnityEngine.RectTransform>().anchoredPosition;
-        var ap2 = GameObjects.ielCache[1].GetComponent<UnityEngine.RectTransform>().anchoredPosition;
-
-        Extensions.LogDebug(string.Format("[LimitItems] Items prefixing {0} hanging {1} total {2} {3}/{4}", index, itemsHanging, filteredInventory.Count, ap1, ap2));
-
-
-
         var virtualEndSize = tsize * itemsHanging - spacerHalf;
         GameObjects.DummyEnd.gameObject.SetActive(itemsHanging > 0); //If nothing postfixing, must disable to prevent halfspacer offset.
-        GameObjects.DummyEnd.sizeDelta = new UnityEngine.Vector2(100, virtualEndSize);
+        GameObjects.DummyEnd.sizeDelta = new(100, virtualEndSize);
         GameObjects.DummyEnd.SetAsLastSibling();
 
         instance.RefreshInventorySelectability();
-        if (Extensions.Spam) { var sr = inventoryWidget.scrollbarArea;
-            Extensions.LogSpam(string.Format( "[LimitItems] RefreshDone dummystart {0} dummyend {1} vnp {2} lli {3}"
-                , GameObjects.DummyStart.anchoredPosition.y
-                , GameObjects.DummyEnd.anchoredPosition.y
-                , sr.verticalNormalizedPosition
-                , "(" + string.Join(", ", details.ToArray()) + ")"
-            ));
+        if (Extensions.Spam)
+        {
+            var sr = inventoryWidget.scrollbarArea;
+            Extensions.LogSpam($"[LimitItems] RefreshDone dummystart {GameObjects.DummyStart.anchoredPosition.y} dummyend {GameObjects.DummyEnd.anchoredPosition.y} vnp {sr.verticalNormalizedPosition} lli {"(" + string.Join(", ", details.ToArray()) + ")"}");
         }
     }
 
-    internal void Dispose()
-    {
-        GameObjects.Dispose();
-    }
-
-    public readonly static int itemsOnScreen = 7;
+    public static readonly int itemsOnScreen = 7;
     // Maximum # of visual elements to allocate (will be used for slightly off screen elements.)
-    internal readonly static int itemLimit = 8;
+    internal static readonly int itemLimit = 8;
 
     public static bool filterGuard = false;
 }

@@ -31,7 +31,7 @@ public class LazyRoomInitialization : Feature
                         if (patchfun != null)
                         {
                             LogInfo($"LazyRoomInitialization methname {meth.Name}, patchfun {patchfun}");
-                            Main.harmony.Patch(meth, new HarmonyMethod(typeof(LazyRoomInitialization), patchfun), null);
+                            Main.harmony.Patch(meth, new(typeof(LazyRoomInitialization), patchfun), null);
                         }
                     }
                     catch (Exception e)
@@ -41,7 +41,7 @@ public class LazyRoomInitialization : Feature
                 }
             });
         Main.harmony.Patch(AccessTools.Method(typeof(BattleTech.SimGameState), nameof(CompleteLanceConfigurationPrep))
-            , new HarmonyMethod(typeof(LazyRoomInitialization), nameof(CompleteLanceConfigurationPrep), null));
+            , new(typeof(LazyRoomInitialization), nameof(CompleteLanceConfigurationPrep), null));
 
     }
 
@@ -58,7 +58,7 @@ public class LazyRoomInitialization : Feature
         allowInit = false;
     }
 
-    public static Dictionary<SGRoomControllerBase, bool> DB = new Dictionary<SGRoomControllerBase, bool>();
+    public static Dictionary<SGRoomControllerBase, bool> DB = new();
     public static bool allowInit = false;
     public static bool InitWidgets(SGRoomControllerBase __instance)
     {

@@ -12,7 +12,7 @@ class DisableSensitiveDataLogDump : Feature
     public void Activate()
     {
         Main.harmony.Patch(AccessTools.Method(typeof(UnityGameInstance), nameof(OnInternetConnectivityResult))
-            , new HarmonyMethod(typeof(DisableSensitiveDataLogDump), nameof(OnInternetConnectivityResult)));
+            , new(typeof(DisableSensitiveDataLogDump), nameof(OnInternetConnectivityResult)));
 
         /* Mods are hooked too late to guard this
         Control.harmony.Patch(AccessTools.Method(typeof(SteamManager), nameof(Awake))

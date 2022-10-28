@@ -27,8 +27,8 @@ class ContractLagFix : Feature
                 tpatch.prioritiy = Priority.First;
 
                 Main.harmony.Patch(meth
-                    , new HarmonyMethod(typeof(ContractLagFix), nameof(Pre))
-                    , new HarmonyMethod(typeof(ContractLagFix), nameof(Post))
+                    , new(typeof(ContractLagFix), nameof(Pre))
+                    , new(typeof(ContractLagFix), nameof(Post))
                     , tpatch);
             });
 
@@ -37,11 +37,11 @@ class ContractLagFix : Feature
             .ToList()
             .ForEach(con =>
                 Main.harmony.Patch(con
-                    , null, new HarmonyMethod(typeof(ContractLagFix), nameof(EncounterLayerData_Constructor))));
+                    , null, new(typeof(ContractLagFix), nameof(EncounterLayerData_Constructor))));
 
     }
 
-    static Stopwatch sw = new Stopwatch();
+    static Stopwatch sw = new();
 
     public static void EncounterLayerData_Constructor(EncounterLayerData __instance)
     {
@@ -49,7 +49,7 @@ class ContractLagFix : Feature
         eld_cache.Add(__instance);
     }
 
-    static List<EncounterLayerData> eld_cache = new List<EncounterLayerData>();
+    static List<EncounterLayerData> eld_cache = new();
 
     public static EncounterLayerData CachedEncounterLayerData()
     {
@@ -66,8 +66,8 @@ class ContractLagFix : Feature
                     {
                         var inscene = UnityEngine.Object.FindObjectsOfType<EncounterLayerData>();
                         LogError($"eld_cache is out of sync, wants: {wants?.GUID ?? "null"}");
-                        LogError($"scene contains ({string.Join(" ", inscene.Select(c => c == null ? "null" : string.Format("(:contractDefId {0} :contractDefIndex {1} :GUID {2})", c.contractDefId, c.contractDefIndex, c.GUID)).ToArray())})");
-                        LogError($"current EncounterLayerData ({string.Join(" ", eld_cache.Select(c => c == null ? "null" : string.Format("(:contractDefId {0} :contractDefIndex {1} :GUID {2})", c.contractDefId, c.contractDefIndex, c.GUID)).ToArray())})");
+                        LogError($"scene contains ({string.Join(" ", inscene.Select(c => c == null ? "null" : $"(:contractDefId {c.contractDefId} :contractDefIndex {c.contractDefIndex} :GUID {c.GUID})").ToArray())})");
+                        LogError($"current EncounterLayerData ({string.Join(" ", eld_cache.Select(c => c == null ? "null" : $"(:contractDefId {c.contractDefId} :contractDefIndex {c.contractDefIndex} :GUID {c.GUID})").ToArray())})");
                         AlertUser( "ContractsLagFix: Verify error"
                             , "Please report this to the BT Modding group, and include logs");
                     }

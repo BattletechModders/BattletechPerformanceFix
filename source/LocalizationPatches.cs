@@ -17,7 +17,7 @@ class LocalizationPatches : Feature
     // String with non number text between {} is rare, so only do the repair if format fails.
     public static bool StringForKeyFormat_Pre(StringsProviderBase<object> __instance, string key, ref string __result, ref (bool,string)? __state, params object[] args)
     {
-        string text = __instance.StringForKey(key);
+        var text = __instance.StringForKey(key);
         try
         {
             var formatted = key == null ? "" : (string.Format(text, args) ?? "");

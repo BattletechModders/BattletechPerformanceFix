@@ -8,7 +8,7 @@ class EnableLoggingDuringLoads : Feature
 {
     public void Activate() {
         Main.harmony.Patch( AccessTools.Method(typeof(BattleTech.LevelLoader), "EnableLogging")
-            , new HarmonyMethod(AccessTools.Method(typeof(EnableLoggingDuringLoads), "EnableLogging")));
+            , new(AccessTools.Method(typeof(EnableLoggingDuringLoads), "EnableLogging")));
     }
 
     public static void EnableLogging(ref bool enable)

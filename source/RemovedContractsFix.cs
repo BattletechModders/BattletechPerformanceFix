@@ -14,7 +14,7 @@ class RemovedContractsFix : Feature
 
     static void Rehydrate_Pre(SimGameState __instance, GameInstanceSave gameInstanceSave)
     {
-        IDataItemStore<string, ContractOverride> contractOverrides = __instance.DataManager.ContractOverrides;
+        var contractOverrides = __instance.DataManager.ContractOverrides;
         gameInstanceSave.SimGameSave.ContractBits.RemoveAll(item => !contractOverrides.Exists(item.conName));
     }
 }
