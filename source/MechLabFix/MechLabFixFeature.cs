@@ -11,13 +11,13 @@ using Object = UnityEngine.Object;
 
 namespace BattletechPerformanceFix.MechLabFix;
 
-public class MechLabFixFeature : Feature {
+internal class MechLabFixFeature : Feature {
     public void Activate() {
         "InitWidgets".Transpile<MechLabPanel>();
         "InitWidgets".Pre<MechLabPanel>();
+        "OnPooled".Pre<MechLabPanel>();
         "OnPooled".Post<MechLabPanel>();
         "PopulateInventory".Pre<MechLabPanel>();
-        "ExitMechLab".Pre<MechLabPanel>();
         "LateUpdate".Pre<UnityEngine.UI.ScrollRect>();
         "OnAddItem".Pre<MechLabInventoryWidget>();
         "OnRemoveItem".Pre<MechLabInventoryWidget>();
@@ -49,22 +49,86 @@ public class MechLabFixFeature : Feature {
 
     public static SG_Shop_Screen CreateUIModule(UIManager uiManager, string prefabOverride = "", bool resort = true)
     {
-        return uiManager.GetOrCreateUIModule<SG_Shop_Screen>(prefabOverride, resort);
+        LogDebug("[LimitItems] CreateUIModule");
+        try {
+            return uiManager.GetOrCreateUIModule<SG_Shop_Screen>(prefabOverride, resort);
+        } catch(Exception e) {
+            LogException(e);
+            throw;
+        }
     }
 
     public static void InitWidgets_Pre(MechLabPanel __instance)
     {
-        if (__instance.Shop != null)
-        {
-            __instance.Shop.Pool();
+        LogDebug("[LimitItems] InitWidgets_Pre");
+        try {
+            if (__instance.Shop != null)
+            {
+                __instance.Shop.Pool();
+            }
+        } catch(Exception e) {
+            LogException(e);
         }
     }
 
 #endregion
-    
-#region fix for accumulating inventory elements by cleaning the pool and loose objects while excluding the prefab
-    public static void OnPooled_Post(MechLabPanel __instance)
+
+internal static MechLabFixState state;
+
+    public static bool PopulateInventory_Pre(MechLabPanel __instance)
     {
+        LogDebug("[LimitItems] PopulateInventory_Pre");
+        try {
+            if (state != null)
+            {
+                LogInfo("[LimitItems] state.Dispose");
+                state.Dispose();
+                state = null;
+            }
+            state = new MechLabFixState(__instance);
+        } catch(Exception e) {
+            LogException(e);
+        }
+        return false;
+    }
+
+    // TODO make the patch a component so we can avoid pooling here
+    public static void OnPooled_Pre()
+    {
+        LogDebug("[LimitItems] OnPooled_Pre");
+        return;
+        if (state == null)
+        {
+            LogError("[LimitItems] Unhandled OnPooled");
+            return;
+        }
+
+        LogDebug("[LimitItems] Pooled mechlab");
+        try
+        {
+            state?.Dispose();
+            state = null;
+        }
+        catch (Exception e)
+        {
+            LogException(e);
+        }
+    }
+
+    public static void OnPooled_Post(MechLabPanel __instance){
+        LogDebug("[LimitItems] OnPooled_Post");
+        // return;
+        try
+        {
+            state?.Dispose();
+            state = null;
+        }
+        catch (Exception e)
+        {
+            LogException(e);
+        }
+        return;
+#region fix for accumulating inventory elements by cleaning the pool and loose objects while excluding the prefab
         var prefabCache = __instance.dataManager.GameObjectPool;
         var prefabName = ListElementController_BASE_NotListView.INVENTORY_ELEMENT_PREFAB_NotListView;
 
@@ -73,63 +137,54 @@ public class MechLabFixFeature : Feature {
         {
             foreach (var @object in linkedList)
             {
-                Object.Destroy(@object);
+                Object.DestroyImmediate(@object);
             }
             linkedList.Clear();
         }
 
         foreach (var component in Resources.FindObjectsOfTypeAll<InventoryItemElement_NotListView>())
         {
-            if (component.gameObject != prefab)
+            if (component.transform.parent == null && component.gameObject != prefab)
             {
-                Object.Destroy(component.gameObject);
+                Object.DestroyImmediate(component.gameObject);
             }
         }
-    }
 #endregion
-
-    public static PatchMechlabLimitItems state;
-
-    public static bool PopulateInventory_Pre(MechLabPanel __instance)
-    {
-        if (state != null) LogError("[LimitItems] PopulateInventory was not properly cleaned");
-        LogDebug("[LimitItems] PopulateInventory patching (Mechlab fix)");
-        state = new PatchMechlabLimitItems(__instance);
-        return false;
-    }
-
-    public static void ExitMechLab_Pre(MechLabPanel __instance)
-    {
-        if (state == null) { LogError("[LimitItems] Unhandled ExitMechLab"); return; }
-        LogDebug("[LimitItems] Exiting mechlab");
-        state.Dispose();
-        state = null;
     }
 
     public static void LateUpdate_Pre(UnityEngine.UI.ScrollRect __instance)
     {
-        if (state != null && state.inventoryWidget.scrollbarArea == __instance) {
-            var newIndex = (int)((state.endIndex) * (1.0f - __instance.verticalNormalizedPosition));
-            if (state.filteredInventory.Count < PatchMechlabLimitItems.itemsOnScreen) {
-                newIndex = 0;
+        LogDebug("[LimitItems] LateUpdate_Pre");
+        try
+        {
+            if (state != null && state.inventoryWidget.scrollbarArea == __instance) {
+                var newIndex = (int)((state.endIndex) * (1.0f - __instance.verticalNormalizedPosition));
+                if (state.filteredInventory.Count < MechLabFixState.itemsOnScreen) {
+                    newIndex = 0;
+                }
+                if (state.index != newIndex) {
+                    state.index = newIndex;
+                    LogDebug($"[LimitItems] Refresh with: {newIndex} {__instance.verticalNormalizedPosition}");
+                    state.Refresh(false);
+                }
             }
-            if (state.index != newIndex) {
-                state.index = newIndex;
-                LogDebug(string.Format("[LimitItems] Refresh with: {0} {1}", newIndex, __instance.verticalNormalizedPosition));
-                state.Refresh(false);
-            }
+        }
+        catch (Exception e)
+        {
+            LogException(e);
         }
     }
 
     public static bool OnAddItem_Pre(MechLabInventoryWidget __instance, IMechLabDraggableItem item)
     {
+        LogDebug("[LimitItems] OnAddItem_Pre");
         if (state != null && state.inventoryWidget == __instance) {
             try {
                 var nlv = item as InventoryItemElement_NotListView;
                 var quantity = nlv == null ? 1 : nlv.controller.quantity;
                 var existing = state.FetchItem(item.ComponentRef);
                 if (existing == null) {
-                    LogDebug(string.Format("OnAddItem new {0}", quantity));
+                    LogDebug($"OnAddItem new {quantity}");
                     var controller = nlv == null ? null : nlv.controller;
                     if (controller == null) {
                         if (item.ComponentRef.ComponentDefType == ComponentType.Weapon) {
@@ -146,7 +201,7 @@ public class MechLabFixFeature : Feature {
                     state.rawInventory = state.Sort(state.rawInventory);
                     state.FilterChanged(false);
                 } else {
-                    LogDebug(string.Format("OnAddItem existing {0}", quantity));
+                    LogDebug($"OnAddItem existing {quantity}");
                     if (existing.quantity != Int32.MinValue) {
                         existing.ModifyQuantity(quantity);
                     }
@@ -163,15 +218,16 @@ public class MechLabFixFeature : Feature {
 
     public static bool OnRemoveItem_Pre(MechLabInventoryWidget __instance, IMechLabDraggableItem item)
     {
+        LogDebug("[LimitItems] OnRemoveItem_Pre");
         if (state != null && state.inventoryWidget == __instance) {
             try {
                 var nlv = item as InventoryItemElement_NotListView;
 
                 var existing = state.FetchItem(item.ComponentRef);
                 if (existing == null) {
-                    LogError(string.Format("OnRemoveItem new (should be impossible?) {0}", nlv.controller.quantity));
+                    LogError($"OnRemoveItem new (should be impossible?) {nlv.controller.quantity}");
                 } else {
-                    LogDebug(string.Format("OnRemoveItem existing {0}", nlv.controller.quantity));
+                    LogDebug($"OnRemoveItem existing {nlv.controller.quantity}");
                     if (existing.quantity != Int32.MinValue) {
                         existing.ModifyQuantity(-1);
                         if (existing.quantity < 1)
@@ -191,35 +247,55 @@ public class MechLabFixFeature : Feature {
 
     public static bool ApplyFiltering_Pre(MechLabInventoryWidget __instance, bool refreshPositioning)
     {
-        if (state != null && state.inventoryWidget == __instance && !PatchMechlabLimitItems.filterGuard) {
-            LogDebug(string.Format("OnApplyFiltering (refresh-pos? {0})", refreshPositioning));
-            state.FilterChanged(refreshPositioning);
-            return false;
-        } else {
-            return true;
+        LogDebug("[LimitItems] ApplyFiltering_Pre");
+        try
+        {
+            if (state != null && state.inventoryWidget == __instance && !MechLabFixState.filterGuard) {
+                LogDebug($"OnApplyFiltering (refresh-pos? {refreshPositioning})");
+                state.FilterChanged(refreshPositioning);
+                return false;
+            } else {
+                return true;
+            }
+        }
+        catch (Exception e)
+        {
+            LogException(e);
+            throw;
         }
     }
 
     public static bool ApplySorting_Pre(MechLabInventoryWidget __instance)
     {
-        if (state != null && state.inventoryWidget == __instance) {
-            // it's a mechlab screen, we do our own sort.
-            var _cs = __instance.currentSort;
-            var cst = _cs.Method;
-            LogDebug(string.Format("OnApplySorting using {0}::{1}", cst.DeclaringType.FullName, cst.ToString()));
-            state.FilterChanged(false);
-            return false;
-        } else {
-            return true;
+        LogDebug("[LimitItems] ApplySorting_Pre");
+        try
+        {
+            if (state != null && state.inventoryWidget == __instance) {
+                // it's a mechlab screen, we do our own sort.
+                var _cs = __instance.currentSort;
+                var cst = _cs.Method;
+                LogDebug($"OnApplySorting using {cst.DeclaringType.FullName}::{cst.ToString()}");
+                state.FilterChanged(false);
+                return false;
+            } else {
+                return true;
+            }
+        }
+        catch (Exception e)
+        {
+            LogException(e);
+            throw;
         }
     }
 
     public static bool MechCanEquipItem_Pre(InventoryItemElement_NotListView item)
     {
+        LogDebug("[LimitItems] MechCanEquipItem_Pre");
         return item.ComponentRef == null ? false : true;
     }
 
     public static void OnItemGrab_Pre(MechLabInventoryWidget __instance, ref IMechLabDraggableItem item) {
+        LogDebug("[LimitItems] OnItemGrab_Pre");
         if (state != null && state.inventoryWidget == __instance) {
             try {
                 LogDebug("OnItemGrab");
@@ -237,6 +313,7 @@ public class MechLabFixFeature : Feature {
                 lec.SetupLook(iw);
                 iw.gameObject.SetActive(true);
                 item = iw;
+                Object.DestroyImmediate(nlv);
             } catch(Exception e) {
                 LogException(e);
             }

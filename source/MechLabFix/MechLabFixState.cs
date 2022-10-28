@@ -18,109 +18,61 @@ namespace BattletechPerformanceFix.MechLabFix;
    Always process the data first, and then only create or re-use a couple of visual elements to display it.
    The user only sees 8 items at once, and they're expensive to create, so only make 8 of them.
 */
-public class PatchMechlabLimitItems {
+internal class MechLabFixState {
     public MechLabPanel instance;
     public MechLabInventoryWidget inventoryWidget;
-
-    public List<InventoryItemElement_NotListView> ielCache;
 
     public List<ListElementController_BASE_NotListView> rawInventory;
     public List<ListElementController_BASE_NotListView> filteredInventory;
 
     // Index of current item element at the top of scrollrect
     public int index = 0;
-
     public int endIndex = 0;
 
-    // Temporary visual element used in the filter process.
-    public InventoryItemElement_NotListView iieTmp;
+    private MechLabFixGameObjects GameObjects = new();
 
-    public PatchMechlabLimitItems(MechLabPanel instance) {
-        try {
-            var sw = new Stopwatch();
-            sw.Start();
-            this.instance = instance;
-            this.inventoryWidget = instance.inventoryWidget.LogIfNull("inventoryWidget is null");
+    public MechLabFixState(MechLabPanel instance) {
+        var sw = new Stopwatch();
+        sw.Start();
+        this.instance = instance;
+        inventoryWidget = instance.inventoryWidget.LogIfNull("inventoryWidget is null");
 
-            Extensions.LogDebug($"StorageInventory contains {instance.storageInventory.Count}");
+        Extensions.LogDebug($"StorageInventory contains {instance.storageInventory.Count}");
 
-            if (instance.IsSimGame) {
-                instance.originalStorageInventory = instance.storageInventory.LogIfNull("storageInventory is null");
-            }
-
-            Extensions.LogDebug($"Mechbay Patch initialized :simGame? {instance.IsSimGame}");
-
-            List<ListElementController_BASE_NotListView> BuildRawInventory()
-                => instance.storageInventory.Select<MechComponentRef, ListElementController_BASE_NotListView>(componentRef => {
-                    Extensions.LogIfNull<MechComponentRef>(componentRef, "componentRef is null");
-                    componentRef.DataManager = instance.dataManager.LogIfNull("(MechLabPanel instance).dataManager is null");
-                    componentRef.RefreshComponentDef();
-                    Extensions.LogIfNull<MechComponentDef>(componentRef.Def, "componentRef.Def is null");
-                    var count = (!instance.IsSimGame
-                        ? int.MinValue
-                        : instance.sim.GetItemCount((DescriptionDef)componentRef.Def.Description, componentRef.Def.GetType(), instance.sim.GetItemCountDamageType(componentRef)));
-
-                    if (componentRef.ComponentDefType == ComponentType.Weapon) {
-                        ListElementController_InventoryWeapon_NotListView controller = new ListElementController_InventoryWeapon_NotListView();
-                        controller.InitAndFillInSpecificWidget(componentRef, null, instance.dataManager, null, count, false);
-                        return controller;
-                    } else {
-                        ListElementController_InventoryGear_NotListView controller = new ListElementController_InventoryGear_NotListView();
-                        controller.InitAndFillInSpecificWidget(componentRef, null, instance.dataManager, null, count, false);
-                        return controller;
-                    }
-                }).ToList();
-            /* Build a list of data only for all components. */
-            rawInventory = Sort(BuildRawInventory());
-
-            InventoryItemElement_NotListView mkiie(bool nonexistant) {
-                // TODO MEMORY LEAK!!!!!!!!!!
-                var nlv = instance.dataManager
-                    .PooledInstantiate(ListElementController_BASE_NotListView.INVENTORY_ELEMENT_PREFAB_NotListView, BattleTechResourceType.UIModulePrefabs)
-                    .LogIfNull("Unable to instantiate INVENTORY_ELEMENT_PREFAB_NotListView")
-                    .GetComponent<InventoryItemElement_NotListView>()
-                    .LogIfNull("Inventory_Element_prefab does not contain a NLV");
-                nlv.gameObject.IsDestroyedError("NLV gameObject has been destroyed");
-                nlv.gameObject.LogIfNull("NLV gameObject has been destroyed");
-                if (!nonexistant) {
-                    nlv.SetRadioParent(inventoryWidget.inventoryRadioSet.LogIfNull("inventoryRadioSet is null"));
-                    nlv.gameObject.transform.SetParent(inventoryWidget.listParent.LogIfNull("listParent is null"), false);
-                    nlv.gameObject.transform.localScale = UnityEngine.Vector3.one;
-                }
-                return nlv;
-            };
-
-            iieTmp = mkiie(true);
-
-            /* Allocate very few visual elements, as this is extremely slow for both allocation and deallocation.
-                   It's the difference between a couple of milliseconds and several seconds for many unique items in inventory 
-                   This is the core of the fix, the rest is just to make it work within HBS's existing code.
-                */
-            List<InventoryItemElement_NotListView> make_ielCache()
-                => Enumerable.Repeat<Func<InventoryItemElement_NotListView>>( () => mkiie(false), itemLimit)
-                    .Select(thunk => thunk())
-                    .ToList();
-            ielCache = make_ielCache();
-                    
-            var li = inventoryWidget.localInventory;
-            ielCache.ForEach(iw => li.Add(iw));
-            // End
-
-            var lp = inventoryWidget.listParent;
-
-            // DummyStart&End are blank rects stored at the beginning and end of the list so that unity knows how big the scrollrect should be
-            // "placeholders"
-            if (DummyStart == null) DummyStart = new UnityEngine.GameObject().AddComponent<UnityEngine.RectTransform>();
-            if (DummyEnd   == null) DummyEnd   = new UnityEngine.GameObject().AddComponent<UnityEngine.RectTransform>();
-
-            DummyStart.SetParent(lp, false);
-            DummyEnd.SetParent(lp, false);
-            Extensions.LogDebug(string.Format("[LimitItems] inventory cached in {0} ms", sw.Elapsed.TotalMilliseconds));
-
-            FilterChanged();
-        } catch(Exception e) {
-            Extensions.LogException(e);
+        if (instance.IsSimGame) {
+            instance.originalStorageInventory = instance.storageInventory.LogIfNull("storageInventory is null");
         }
+
+        Extensions.LogDebug($"Mechbay Patch initialized :simGame? {instance.IsSimGame}");
+
+        List<ListElementController_BASE_NotListView> BuildRawInventory()
+            => instance.storageInventory.Select<MechComponentRef, ListElementController_BASE_NotListView>(componentRef => {
+                Extensions.LogIfNull<MechComponentRef>(componentRef, "componentRef is null");
+                componentRef.DataManager = instance.dataManager.LogIfNull("(MechLabPanel instance).dataManager is null");
+                componentRef.RefreshComponentDef();
+                Extensions.LogIfNull<MechComponentDef>(componentRef.Def, "componentRef.Def is null");
+                var count = (!instance.IsSimGame
+                    ? int.MinValue
+                    : instance.sim.GetItemCount((DescriptionDef)componentRef.Def.Description, componentRef.Def.GetType(), instance.sim.GetItemCountDamageType(componentRef)));
+
+                if (componentRef.ComponentDefType == ComponentType.Weapon) {
+                    ListElementController_InventoryWeapon_NotListView controller = new ListElementController_InventoryWeapon_NotListView();
+                    controller.InitAndFillInSpecificWidget(componentRef, null, instance.dataManager, null, count, false);
+                    return controller;
+                } else {
+                    ListElementController_InventoryGear_NotListView controller = new ListElementController_InventoryGear_NotListView();
+                    controller.InitAndFillInSpecificWidget(componentRef, null, instance.dataManager, null, count, false);
+                    return controller;
+                }
+            }).ToList();
+        /* Build a list of data only for all components. */
+        rawInventory = Sort(BuildRawInventory());
+        GameObjects.Create();
+        GameObjects.Setup(inventoryWidget);
+        // End
+        Extensions.LogDebug(string.Format("[LimitItems] inventory cached in {0} ms", sw.Elapsed.TotalMilliseconds));
+
+        FilterChanged();
     }
 
     public ListElementController_BASE_NotListView FetchItem(MechComponentRef mcr)
@@ -176,8 +128,8 @@ public class PatchMechlabLimitItems {
             return res;
         }));
 
-        UnityEngine.GameObject.Destroy(go);
-        UnityEngine.GameObject.Destroy(go2);
+        UnityEngine.Object.Destroy(go);
+        UnityEngine.Object.Destroy(go2);
 
         var delta = sw.Elapsed.TotalMilliseconds;
         Extensions.LogInfo(string.Format("Sorted in {0} ms", delta));
@@ -266,7 +218,7 @@ public class PatchMechlabLimitItems {
             var sw = new Stopwatch();
             sw.Start();
             var tmp = inventoryWidget.localInventory;
-            var iw = iieTmp;
+            var iw = GameObjects.iieTmp;
 
             // Filter items once using the faster code, then again to handle mods.
             var okItems = Filter(items).Where(lec => {
@@ -355,7 +307,7 @@ public class PatchMechlabLimitItems {
                 index = 0;
             }
 
-            filteredInventory = FilterUsingHBSCode(rawInventory);
+            filteredInventory = MechLabFixPublic.FilterFunc(rawInventory);
             endIndex = filteredInventory.Count - itemsOnScreen;
             Refresh();
         } catch (Exception e) {
@@ -384,12 +336,12 @@ public class PatchMechlabLimitItems {
                 , lec.GetId());
         };
 
-        var iw_corrupted_add = inventoryWidget.localInventory.Where(x => !ielCache.Contains(x)).ToList();
+        var iw_corrupted_add = inventoryWidget.localInventory.Where(x => !GameObjects.ielCache.Contains(x)).ToList();
         if (iw_corrupted_add.Count > 0)
         {
             Extensions.LogError("inventoryWidget has been corrupted, items were added directly: " + string.Join(", ", iw_corrupted_add.Select(c => c.controller).Select(pp).ToArray()));
         }
-        var iw_corrupted_remove = ielCache.Where(x => !inventoryWidget.localInventory.Contains(x)).ToList();
+        var iw_corrupted_remove = GameObjects.ielCache.Where(x => !inventoryWidget.localInventory.Contains(x)).ToList();
         if (iw_corrupted_remove.Count > 0)
         {
             Extensions.LogError("inventoryWidget has been corrupted, iel elements were removed.");
@@ -398,12 +350,12 @@ public class PatchMechlabLimitItems {
         if (iw_corrupted_add.Any() || iw_corrupted_remove.Any())
         {
             Extensions.LogWarning("Restoring to last good state. Duplication or item loss may occur.");
-            inventoryWidget.localInventory = ielCache.ToArray().ToList();
+            inventoryWidget.localInventory = GameObjects.ielCache.ToArray().ToList();
         }
 
         var toShow = filteredInventory.Skip(index).Take(itemLimit).ToList();
 
-        var icc = ielCache.ToList();
+        var icc = GameObjects.ielCache.ToList();
 
             
 
@@ -430,45 +382,43 @@ public class PatchMechlabLimitItems {
         var tsize        = listElemSize + spacerTotal;
             
         var virtualStartSize = tsize * index - spacerHalf;
-        DummyStart.gameObject.SetActive(index > 0); //If nothing prefixing, must disable to prevent halfspacer offset.
-        DummyStart.sizeDelta = new UnityEngine.Vector2(100, virtualStartSize);
-        DummyStart.SetAsFirstSibling();
+        GameObjects.DummyStart.gameObject.SetActive(index > 0); //If nothing prefixing, must disable to prevent halfspacer offset.
+        GameObjects.DummyStart.sizeDelta = new UnityEngine.Vector2(100, virtualStartSize);
+        GameObjects.DummyStart.SetAsFirstSibling();
 
-        var itemsHanging = filteredInventory.Count - (index + ielCache.Count(ii => ii.gameObject.activeSelf));
+        var itemsHanging = filteredInventory.Count - (index + GameObjects.ielCache.Count(ii => ii.gameObject.activeSelf));
 
-        var ap1 = ielCache[0].GetComponent<UnityEngine.RectTransform>().anchoredPosition;
-        var ap2 = ielCache[1].GetComponent<UnityEngine.RectTransform>().anchoredPosition;
+        var ap1 = GameObjects.ielCache[0].GetComponent<UnityEngine.RectTransform>().anchoredPosition;
+        var ap2 = GameObjects.ielCache[1].GetComponent<UnityEngine.RectTransform>().anchoredPosition;
 
         Extensions.LogDebug(string.Format("[LimitItems] Items prefixing {0} hanging {1} total {2} {3}/{4}", index, itemsHanging, filteredInventory.Count, ap1, ap2));
 
 
 
         var virtualEndSize = tsize * itemsHanging - spacerHalf;
-        DummyEnd.gameObject.SetActive(itemsHanging > 0); //If nothing postfixing, must disable to prevent halfspacer offset.
-        DummyEnd.sizeDelta = new UnityEngine.Vector2(100, virtualEndSize);
-        DummyEnd.SetAsLastSibling();
+        GameObjects.DummyEnd.gameObject.SetActive(itemsHanging > 0); //If nothing postfixing, must disable to prevent halfspacer offset.
+        GameObjects.DummyEnd.sizeDelta = new UnityEngine.Vector2(100, virtualEndSize);
+        GameObjects.DummyEnd.SetAsLastSibling();
 
         instance.RefreshInventorySelectability();
         if (Extensions.Spam) { var sr = inventoryWidget.scrollbarArea;
             Extensions.LogSpam(string.Format( "[LimitItems] RefreshDone dummystart {0} dummyend {1} vnp {2} lli {3}"
-                , DummyStart.anchoredPosition.y
-                , DummyEnd.anchoredPosition.y
+                , GameObjects.DummyStart.anchoredPosition.y
+                , GameObjects.DummyEnd.anchoredPosition.y
                 , sr.verticalNormalizedPosition
                 , "(" + string.Join(", ", details.ToArray()) + ")"
             ));
         }
     }
 
-    public void Dispose() {
-        inventoryWidget.localInventory.ForEach(ii => ii.controller = null);
+    internal void Dispose()
+    {
+        GameObjects.Dispose();
     }
 
     public readonly static int itemsOnScreen = 7;
-
     // Maximum # of visual elements to allocate (will be used for slightly off screen elements.)
-    public readonly static int itemLimit = 8;
-    public static UnityEngine.RectTransform DummyStart; 
-    public static UnityEngine.RectTransform DummyEnd;
+    internal readonly static int itemLimit = 8;
 
     public static bool filterGuard = false;
 }
