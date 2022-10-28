@@ -38,6 +38,8 @@ internal class MechLabFixGameObjects
         if (_iieTmp == null)
         {
             _iieTmp = GetIIE();
+            // TODO find a good place to put this
+            _iieTmp.name = ListElementController_BASE_NotListView.INVENTORY_ELEMENT_PREFAB_NotListView + " (" + Main.ModName +")";
         }
 
         /* Allocate very few visual elements, as this is extremely slow for both allocation and deallocation.
