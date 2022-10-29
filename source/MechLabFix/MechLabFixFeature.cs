@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using BattleTech;
 using BattleTech.UI;
 using Harmony;
-using UnityEngine;
 using static BattletechPerformanceFix.Extensions;
 
 namespace BattletechPerformanceFix.MechLabFix;
@@ -20,7 +18,6 @@ internal class MechLabFixFeature : Feature {
         "ClearInventory".Pre<MechLabInventoryWidget>();
         "OnAddItem".Pre<MechLabInventoryWidget>();
         "OnRemoveItem".Pre<MechLabInventoryWidget>();
-        "OnItemGrab".Pre<MechLabInventoryWidget>();
         "ApplyFiltering".Pre<MechLabInventoryWidget>("ApplyFiltering_Pre", Priority.First);
         "MechCanEquipItem".Pre<MechLabPanel>();
         "ApplySorting".Pre<MechLabInventoryWidget>("ApplySorting_Pre", Priority.First);
@@ -242,35 +239,14 @@ internal class MechLabFixFeature : Feature {
     public static bool MechCanEquipItem_Pre(InventoryItemElement_NotListView item)
     {
         LogDebug("[LimitItems] MechCanEquipItem_Pre");
-        // undo NRE pool fix
+
+        // undo "fix NRE within Pool()" from earlier
         if (item.controller != null && item.controller.componentDef == null)
         {
             item.controller = null;
         }
+
+        // no idea why this is here, just a NRE fix for vanilla?
         return item.ComponentRef != null;
     }
-
-    public static void OnItemGrab_Pre(MechLabInventoryWidget __instance, ref IMechLabDraggableItem item) {
-        LogDebug("[LimitItems] OnItemGrab_Pre");
-        if (state != null && state.inventoryWidget == __instance) {
-            try {
-                var nlv = item as InventoryItemElement_NotListView;
-                var iw = state.instance.dataManager
-                    .PooledInstantiate(ListElementController_BASE_NotListView.INVENTORY_ELEMENT_PREFAB_NotListView, BattleTechResourceType.UIModulePrefabs)
-                    .GetComponent<InventoryItemElement_NotListView>();
-                var lec = nlv.controller;
-                var cref = state.GetRef(lec);
-                iw.ClearEverything();
-                iw.ComponentRef = cref;
-                lec.ItemWidget = iw;
-                iw.SetData(lec, state.inventoryWidget, lec.quantity);
-                lec.SetupLook(iw);
-                iw.gameObject.SetActive(true);
-                item = iw;
-            } catch(Exception e) {
-                LogException(e);
-            }
-        }
-    }
-
 }
