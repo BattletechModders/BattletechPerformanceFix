@@ -12,7 +12,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(BattletechPerformanceFixModPath)' == ''">
     <!-- sources dir -->
-    <BattletechPerformanceFixModPath>$(SolutionDir)</BattletechPerformanceFixModPath>
+    <BattletechPerformanceFixModPath>$(MSBuildProjectDirectory)\..</BattletechPerformanceFixModPath>
   </PropertyGroup>
   <PropertyGroup>
     <OutputType>Library</OutputType>
