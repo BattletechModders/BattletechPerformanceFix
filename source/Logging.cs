@@ -7,7 +7,7 @@ namespace BattletechPerformanceFix;
 
 public static partial class Extensions
 {
-    public static bool Spam => Main.HBSLogger.IsDebugEnabled;
+    public static bool Spam { get; set; }
     public static void LogException(Exception e)
     {
         Main.HBSLogger.LogException(e);
@@ -23,16 +23,18 @@ public static partial class Extensions
         Main.HBSLogger.LogWarning(message);
     }
 
-    public static void LogInfo(string message) {
+    public static void LogInfo(string message)
+    {
         Main.HBSLogger.Log(message);
     }
 
-    // Can't hit the HBSLogger with debug/spam. It's too slow
-    public static void LogDebug(string message) {
+    public static void LogDebug(string message)
+    {
         Main.HBSLogger.LogDebug(message);
     }
 
-    public static void LogSpam(string message) {
+    public static void LogSpam(string message)
+    {
         Main.HBSLogger.LogDebug(message);
     }
 }

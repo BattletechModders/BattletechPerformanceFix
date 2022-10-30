@@ -27,12 +27,9 @@ public static class Main
 
     public static void Start(string modDirectory, string json)
     {
-        HBSLogger = Logger.GetLogger(ModName, LogLevel.Debug);
-
         ModDir = modDirectory;
-        try { settings = JsonConvert.DeserializeObject<Settings>(File.ReadAllText(SettingsPath)); }
-        catch { LogWarning("Settings file is invalid or missing, regenerating with defaults"); }
-        Logger.SetLoggerLevel(ModName, Enum.TryParse<LogLevel>(settings.logLevel, out var level) ? level : LogLevel.Debug);
+
+        LoadSettingsAndSetupLogger();
 
         harmony = HarmonyInstance.Create(ModFullName);
 
@@ -99,6 +96,45 @@ public static class Main
         }
 
         return meth;
+    }
+
+    private static void LoadSettingsAndSetupLogger()
+    {
+        Exception settingsEx;
+        try
+        {
+            settings = JsonConvert.DeserializeObject<Settings>(File.ReadAllText(SettingsPath));
+            settingsEx = null;
+        }
+        catch (Exception e)
+        {
+            settingsEx = e;
+        }
+
+        LogLevel logLevel;
+        if (string.Equals(settings.logLevel, "spam", StringComparison.OrdinalIgnoreCase))
+        {
+            Spam = true;
+            logLevel = LogLevel.Debug;
+        }
+        else if (string.Equals(settings.logLevel, "info", StringComparison.OrdinalIgnoreCase))
+        {
+            logLevel = LogLevel.Log;
+        }
+        else if (Enum.TryParse<LogLevel>(settings.logLevel, out var level))
+        {
+            logLevel = level;
+        }
+        else
+        {
+            logLevel = LogLevel.Debug;
+        }
+        HBSLogger = Logger.GetLogger(ModName, logLevel);
+
+        if (settingsEx != null)
+        {
+            HBSLogger.LogWarning("Settings file is invalid or missing, using defaults", settingsEx);
+        }
     }
 }
 
