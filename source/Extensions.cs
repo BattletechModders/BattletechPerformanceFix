@@ -20,11 +20,13 @@ public static partial class Extensions {
     }
 
     public static void Trap(Action f)
-    { try { f(); } catch (Exception e) { LogException(e); }}
+    { try { f(); } catch (Exception e) {
+        Logging.Error?.Log("Encountered exception", e); }}
 
     public static T Trap<T>(Func<T> f, Func<T> or = null)
     {
-        try { return f(); } catch (Exception e) { LogException(e); return or == null ? default(T) : or(); }
+        try { return f(); } catch (Exception e) {
+            Logging.Error?.Log("Encountered exception", e); return or == null ? default(T) : or(); }
     }
 
     public static void TrapSilently(Action f)
@@ -35,7 +37,7 @@ public static partial class Extensions {
         try {
             return f();
         } catch (Exception e) {
-            LogError($"PANIC {msg} {e}");
+            Logging.Error?.Log($"PANIC {msg} {e}");
             TerminateImmediately();
             return default(T);
         }
@@ -48,7 +50,7 @@ public static partial class Extensions {
 
     // Do not use for unity Objects! 
     public static T LogIfNull<T>(this T t, string msg) {
-        if (t == null) LogError($"{msg} from {new StackTrace(1).ToString()}");
+        if (t == null) Logging.Error?.Log($"{msg} from {new StackTrace(1).ToString()}");
         return t;
     }
 
@@ -59,7 +61,7 @@ public static partial class Extensions {
             
 
     public static GameObject IsDestroyedError(this GameObject t, string msg) {
-        if (t == null && t?.GetType() != null) LogError($"{msg} from {new StackTrace(1).ToString()}");
+        if (t == null && t?.GetType() != null) Logging.Error?.Log($"{msg} from {new StackTrace(1).ToString()}");
         return t;
     }
 
@@ -93,11 +95,11 @@ public static partial class Extensions {
     }
 
     public static T Measure<T>( string tag, Func<T> f)
-        => Measure((b,t) => LogDebug($"Measure[{tag}] :bytes {b} :seconds {t.TotalSeconds}")
+        => Measure((b,t) => Logging.Debug?.Log($"Measure[{tag}] :bytes {b} :seconds {t.TotalSeconds}")
             , f);
 
     public static void Measure( string tag, Action f)
-        => Measure((b,t) => LogDebug($"Measure[{tag}] :bytes {b} :seconds {t.TotalSeconds}")
+        => Measure((b,t) => Logging.Debug?.Log($"Measure[{tag}] :bytes {b} :seconds {t.TotalSeconds}")
             , () => { f(); return 0; });
 
     public static void TrapAndTerminate(string msg, Action f) => TrapAndTerminate<int>(msg, () => { f(); return 0; });
@@ -136,13 +138,13 @@ public static partial class Extensions {
 
     public static HarmonyMethod Yes = new(AccessTools.Method(typeof(Extensions), nameof(__Yes)));
     public static bool  __Yes(ref bool __result) {
-        LogDebug($"Saying yes to to {new StackFrame(1).ToString()}");
+        Logging.Debug?.Log($"Saying yes to to {new StackFrame(1).ToString()}");
         __result = true;
         return false;
     }
     public static HarmonyMethod No = new(AccessTools.Method(typeof(Extensions), nameof(__No)));
     public static bool  __No(ref bool __result) {
-        LogDebug($"Saying no to to {new StackFrame(1).ToString()}");
+        Logging.Debug?.Log($"Saying no to to {new StackFrame(1).ToString()}");
         __result = false;
         return false;
     }
@@ -167,7 +169,7 @@ public static partial class Extensions {
 
         pnames.Where(p => p != null)
             .ToList()
-            .ForEach(p => LogInfo($"Patch: {method.DeclaringType.Name}.{method.Name} -> {onType.Name}.{p}"));
+            .ForEach(p => Logging.Info?.Log($"Patch: {method.DeclaringType.Name}.{method.Name} -> {onType.Name}.{p}"));
         Trap(() => Main.harmony.Patch( method, patches[0], patches[1], patches[2]));
 
     }
@@ -182,7 +184,8 @@ public static partial class Extensions {
         MethodBase meth = null;
         if (method.StartsWith("ctor")) meth = (MethodBase)typeof(T).GetConstructors(AccessTools.all)[0];
         else if (method.StartsWith("get_")) meth = (MethodBase)typeof(T).GetProperties(AccessTools.all)
-            .FirstOrDefault(mm => { LogDebug($"{mm.Name}"); return method.EndsWith(mm.Name); })
+            .FirstOrDefault(mm => {
+                Logging.Debug?.Log($"{mm.Name}"); return method.EndsWith(mm.Name); })
             ?.GetGetMethod();
         else meth = (MethodBase)typeof(T).GetMethods(AccessTools.all)
             .FirstOrDefault(mm => mm.Name == method && mm.GetMethodBody() != null);
@@ -229,7 +232,7 @@ class BPF_CoroutineInvoker : UnityEngine.MonoBehaviour {
     public static BPF_CoroutineInvoker Instance { get => instance ?? Init(); }
 
     static BPF_CoroutineInvoker Init() {
-        LogInfo("BattletechPerformanceFix: Initializing a new coroutine proxy");
+        Logging.Info?.Log("BattletechPerformanceFix: Initializing a new coroutine proxy");
         var go = new UnityEngine.GameObject();
         go.name = "BattletechPerformanceFix:CoroutineProxy";
         instance = go.AddComponent<BPF_CoroutineInvoker>();

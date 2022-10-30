@@ -30,13 +30,13 @@ public class LazyRoomInitialization : Feature
                         var patchfun = sn.Any() ? sn[0] : "Other";
                         if (patchfun != null)
                         {
-                            LogInfo($"LazyRoomInitialization methname {meth.Name}, patchfun {patchfun}");
+                            Logging.Info?.Log($"LazyRoomInitialization methname {meth.Name}, patchfun {patchfun}");
                             Main.harmony.Patch(meth, new(typeof(LazyRoomInitialization), patchfun), null);
                         }
                     }
                     catch (Exception e)
                     {
-                        LogInfo($"Exception {e}");
+                        Logging.Info?.Log($"Exception {e}");
                     }
                 }
             });
@@ -47,7 +47,7 @@ public class LazyRoomInitialization : Feature
 
     public static void CompleteLanceConfigurationPrep(BattleTech.SimGameState __instance)
     {
-        LogInfo("New game ensure CmdCenterRoom is initialized");
+        Logging.Info?.Log("New game ensure CmdCenterRoom is initialized");
         InitializeRoom(__instance.RoomManager.CmdCenterRoom);
     }
 
@@ -64,7 +64,7 @@ public class LazyRoomInitialization : Feature
     {
         return Trap(() =>
         {
-            LogInfo($"SGRoomControllerBase.InitWidgets (want initialize? {allowInit})");
+            Logging.Info?.Log($"SGRoomControllerBase.InitWidgets (want initialize? {allowInit})");
             if (!allowInit)
             {
                 DB[__instance] = false;
@@ -79,7 +79,7 @@ public class LazyRoomInitialization : Feature
     {
         return Trap(() =>
         {
-            LogInfo("SGRoomControllerBase_LeaveRoom");
+            Logging.Info?.Log("SGRoomControllerBase_LeaveRoom");
             if (___roomActive)
                 return true;
             return false;
@@ -89,11 +89,11 @@ public class LazyRoomInitialization : Feature
     {
         Trap(() =>
         {
-            LogInfo($"SGRoomControllerBase_Other {__originalMethod.Name}");
+            Logging.Info?.Log($"SGRoomControllerBase_Other {__originalMethod.Name}");
 
             if (DB[__instance] == false)
             {
-                LogInfo("Initialize Widgets");
+                Logging.Info?.Log("Initialize Widgets");
                 InitializeRoom(__instance);
             }
         });

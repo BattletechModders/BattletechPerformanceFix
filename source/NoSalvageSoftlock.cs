@@ -31,13 +31,12 @@ public class NoSalvageSoftlock : Feature
             {
                 num = 7;
             }
-            LogDebug(
-                $"HasAllPriority :negotiated {negotiated} :available {totalSalvageMadeAvailable} :selected {count} :clamped {num}");
+            Logging.Debug?.Log($"HasAllPriority :negotiated {negotiated} :available {totalSalvageMadeAvailable} :selected {count} :clamped {num}");
             __result = count >= num;
             return false;
         } catch (Exception e)
         {
-            LogException(e);
+            Logging.Error?.Log("Encountered exception", e);
             return true;
         }
     }

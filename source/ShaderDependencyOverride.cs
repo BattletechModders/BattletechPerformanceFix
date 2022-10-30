@@ -31,7 +31,7 @@ class ShaderDependencyOverride : Feature
     {
         if (manager == null)
         {
-            LogDebug("Found bundle manager");
+            Logging.Debug?.Log("Found bundle manager");
             manager = __instance;
         }
     }
@@ -39,7 +39,7 @@ class ShaderDependencyOverride : Feature
     public static string[] GetAllDependenciesOverride(AssetBundleManifest manifest, string bundleName)
     {
         var deps = manifest.GetAllDependencies(bundleName);
-        LogDebug($":load " + bundleName.Dump(false) + " :deps " + deps.Dump(false));
+        Logging.Debug?.Log($":load " + bundleName.Dump(false) + " :deps " + deps.Dump(false));
         if (bundleName.StartsWith("chr") && !manager.IsBundleLoaded("shaders"))
         {
             return Sequence("shaders").Concat(deps).ToArray();

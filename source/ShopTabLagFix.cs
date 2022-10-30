@@ -20,7 +20,7 @@ public class ShopTabLagFix : Feature
 
     public static void OnlySortAtEnd(SG_Shop_Screen __instance)
     {
-        LogDebug("ShopTabLagFix: OnlySortAtEnd");
+        Logging.Debug?.Log("ShopTabLagFix: OnlySortAtEnd");
         var lv = __instance.inventoryWidget.ListView;
 
         //These don't actually seem to be needed, but keeping them just in case.
@@ -29,7 +29,7 @@ public class ShopTabLagFix : Feature
     }
     public static bool AddItemToInventory(MechLabInventoryWidget_ListView __instance, InventoryDataObject_BASE ItemData)
     {
-        LogDebug("ShopTabLagFix: AddItemToInventory");
+        Logging.Debug?.Log("ShopTabLagFix: AddItemToInventory");
         var _this = __instance;
         var _items = _this.ListView.Items;
         InventoryDataObject_BASE listElementController_BASE = null;

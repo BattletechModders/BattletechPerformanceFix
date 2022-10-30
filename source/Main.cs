@@ -6,8 +6,6 @@ using System.Reflection;
 using System.IO;
 using BattletechPerformanceFix.MechLabFix;
 using Newtonsoft.Json;
-using HBS.Logging;
-using static BattletechPerformanceFix.Extensions;
 
 namespace BattletechPerformanceFix;
 
@@ -22,8 +20,6 @@ public static class Main
     public static string SettingsPath { get => Path.Combine(ModDir, "Settings.json"); }
 
     public static Settings settings = new();
-
-    public static ILog HBSLogger;
 
     public static void Start(string modDirectory, string json)
     {
@@ -59,40 +55,40 @@ public static class Main
 
         var allwant = alwaysOn.Concat(want);
 
-        LogInfo("Features ----------");
+        Logging.Info?.Log("Features ----------");
         foreach (var feature in allwant)
         {
-            LogInfo($"Feature {feature.Key.Name} is {(feature.Value ? "ON" : "OFF")}");
+            Logging.Info?.Log($"Feature {feature.Key.Name} is {(feature.Value ? "ON" : "OFF")}");
         }
-        LogInfo("Patches ----------");
+        Logging.Info?.Log("Patches ----------");
         foreach (var feature in allwant)
         {
             if (feature.Value) {
                 try
                 {
-                    LogInfo($"Feature {feature.Key.Name}:");
+                    Logging.Info?.Log($"Feature {feature.Key.Name}:");
                     var f = (Feature)AccessTools.CreateInstance(feature.Key);
                     f.Activate();
                 } catch (Exception e)
                 {
-                    LogError($"Failed to activate feature {feature.Key} with:\n {e}\n");
+                    Logging.Error?.Log($"Failed to activate feature {feature.Key} with:\n {e}\n");
                 }
             }
         }
-        LogInfo("Runtime ----------");
+        Logging.Info?.Log("Runtime ----------");
 
         harmony.PatchAll(Assembly.GetExecutingAssembly());
 
-        LogInfo("Patch out sensitive data log dumps");
+        Logging.Info?.Log("Patch out sensitive data log dumps");
         new DisableSensitiveDataLogDump().Activate();
     }
 
     public static MethodBase CheckPatch(MethodBase meth, params string[] sha256s)
     {
-        Spam?.Log("CheckPatch is NYI");
+        Logging.Spam?.Log("CheckPatch is NYI");
         if (meth == null)
         {
-            LogError("A CheckPatch recieved a null method, this is fatal");
+            Logging.Error?.Log("A CheckPatch recieved a null method, this is fatal");
         }
 
         return meth;
@@ -111,29 +107,11 @@ public static class Main
             settingsEx = e;
         }
 
-        LogLevel logLevel;
-        if (string.Equals(settings.logLevel, "spam", StringComparison.OrdinalIgnoreCase))
-        {
-            SpamEnabled = true;
-            logLevel = LogLevel.Debug;
-        }
-        else if (string.Equals(settings.logLevel, "info", StringComparison.OrdinalIgnoreCase))
-        {
-            logLevel = LogLevel.Log;
-        }
-        else if (Enum.TryParse<LogLevel>(settings.logLevel, out var level))
-        {
-            logLevel = level;
-        }
-        else
-        {
-            logLevel = LogLevel.Debug;
-        }
-        HBSLogger = Logger.GetLogger(ModName, logLevel);
+        Logging.Setup(settings.logLevel);
 
         if (settingsEx != null)
         {
-            HBSLogger.LogWarning("Settings file is invalid or missing, using defaults", settingsEx);
+            Logging.Warn?.Log("Settings file is invalid or missing, using defaults", settingsEx);
         }
     }
 }

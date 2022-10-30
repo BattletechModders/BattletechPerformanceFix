@@ -32,6 +32,6 @@ class LocalizationPatches : Feature
     public static void StringForKeyFormat_Post(StringsProviderBase<object> __instance, string key, ref string __result, ref (bool,string)? __state, params object[] args)
     {
         if (Verify && __state != null && __result != __state?.Item2)
-            LogError($"StringForKeyFormat.Assertion failed: \ncompare: {__result ?? "null"} == {__state?.Item2 ?? "null"} \nkey: {key ?? "null"} \nstring-for-key: {__instance.StringForKey(key) ?? "null"}\nargs: {args.Dump()}");
+            Logging.Error?.Log($"StringForKeyFormat.Assertion failed: \ncompare: {__result ?? "null"} == {__state?.Item2 ?? "null"} \nkey: {key ?? "null"} \nstring-for-key: {__instance.StringForKey(key) ?? "null"}\nargs: {args.Dump()}");
     }
 }

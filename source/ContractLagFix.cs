@@ -32,7 +32,7 @@ class ContractLagFix : Feature
                     , tpatch);
             });
 
-        LogDebug($"EncounterLayerData ctors {typeof(EncounterLayerData).GetConstructors().Count()}");
+        Logging.Debug?.Log($"EncounterLayerData ctors {typeof(EncounterLayerData).GetConstructors().Count()}");
         typeof(EncounterLayerData).GetConstructors()
             .ToList()
             .ForEach(con =>
@@ -58,16 +58,16 @@ class ContractLagFix : Feature
             var cached = eld_cache.Where(c => c != null && c.isActiveAndEnabled).FirstOrDefault();
 
             if (Main.settings.WantContractsLagFixVerify) {
-                Spam?.Log("Verify ELD");
+                Logging.Spam?.Log("Verify ELD");
                 var wants = UnityEngine.Object.FindObjectOfType<EncounterLayerData>();
 
                 Trap(() => {
                     if (cached != wants)
                     {
                         var inscene = UnityEngine.Object.FindObjectsOfType<EncounterLayerData>();
-                        LogError($"eld_cache is out of sync, wants: {wants?.GUID ?? "null"}");
-                        LogError($"scene contains ({string.Join(" ", inscene.Select(c => c == null ? "null" : $"(:contractDefId {c.contractDefId} :contractDefIndex {c.contractDefIndex} :GUID {c.GUID})").ToArray())})");
-                        LogError($"current EncounterLayerData ({string.Join(" ", eld_cache.Select(c => c == null ? "null" : $"(:contractDefId {c.contractDefId} :contractDefIndex {c.contractDefIndex} :GUID {c.GUID})").ToArray())})");
+                        Logging.Error?.Log($"eld_cache is out of sync, wants: {wants?.GUID ?? "null"}");
+                        Logging.Error?.Log($"scene contains ({string.Join(" ", inscene.Select(c => c == null ? "null" : $"(:contractDefId {c.contractDefId} :contractDefIndex {c.contractDefIndex} :GUID {c.GUID})").ToArray())})");
+                        Logging.Error?.Log($"current EncounterLayerData ({string.Join(" ", eld_cache.Select(c => c == null ? "null" : $"(:contractDefId {c.contractDefId} :contractDefIndex {c.contractDefIndex} :GUID {c.GUID})").ToArray())})");
                         AlertUser( "ContractsLagFix: Verify error"
                             , "Please report this to the BT Modding group, and include logs");
                     }

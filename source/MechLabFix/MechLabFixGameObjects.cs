@@ -23,7 +23,7 @@ internal class MechLabFixGameObjects
 
     internal void Setup(MechLabInventoryWidget inventoryWidget)
     {
-        Extensions.LogError($"inventoryCount={inventoryWidget.localInventory?.Count}");
+        Logging.Error?.Log($"inventoryCount={inventoryWidget.localInventory?.Count}");
 
         if (inventoryWidget.localInventory == null)
         {
