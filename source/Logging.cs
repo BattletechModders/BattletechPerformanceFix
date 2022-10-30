@@ -34,22 +34,24 @@ internal static class Logging
         {
             logLevel = LogLevel.Debug;
         }
-        if (logLevel >= LogLevel.Error)
+
+        if (logLevel <= LogLevel.Error)
         {
             Error = new(LogLevel.Error);
         }
-        if (logLevel >= LogLevel.Warning)
+        if (logLevel <= LogLevel.Warning)
         {
             Warn = new(LogLevel.Warning);
         }
-        if (logLevel >= LogLevel.Log)
+        if (logLevel <= LogLevel.Log)
         {
             Info = new(LogLevel.Log);
         }
-        if (logLevel >= LogLevel.Debug)
+        if (logLevel <= LogLevel.Debug)
         {
             Debug = new(LogLevel.Debug);
         }
+
         _logger = Logger.GetLogger(Main.ModName, logLevel);
     }
 

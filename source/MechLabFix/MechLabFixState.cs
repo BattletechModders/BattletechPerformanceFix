@@ -97,35 +97,28 @@ internal class MechLabFixState {
         Logging.Spam?.Log($"Sorting: {items.Select(item => GetRef(item).ComponentDefID).ToArray().Dump(false)}");
 
         var sw = Stopwatch.StartNew();
-        var _a = new ListElementController_InventoryGear_NotListView();
-        var _b = new ListElementController_InventoryGear_NotListView();
-        var go = new UnityEngine.GameObject();
-        var _ac = go.AddComponent<InventoryItemElement_NotListView>(); //new InventoryItemElement_NotListView();
-        var go2 = new UnityEngine.GameObject();
-        var _bc = go2.AddComponent<InventoryItemElement_NotListView>();
-        _ac.controller = _a;
-        _bc.controller = _b;
-        var _cs = inventoryWidget.currentSort;
-        var cst = _cs.Method;
-        Logging.Debug?.Log($"Sort using {cst.DeclaringType.FullName}::{cst}");
+        var cs = inventoryWidget.currentSort;
+        Logging.Debug?.Log($"Sort using {cs.Method.DeclaringType.FullName}::{cs.Method}");
+
+        var iieA = GameObjects.iieTmpA;
+        var iieB = GameObjects.iieTmpB;
 
         var tmp = items.ToList();
         tmp.Sort((l,r) => {
-            _ac.ComponentRef = _a.componentRef = GetRef(l);
-            _bc.ComponentRef = _b.componentRef = GetRef(r);
-            _ac.controller = l;
-            _bc.controller = r;
-            _ac.controller.ItemWidget = _ac;
-            _bc.controller.ItemWidget = _bc;
-            _ac.ItemType = ToDraggableType(l.componentDef);
-            _bc.ItemType = ToDraggableType(r.componentDef);
-            var res = _cs.Invoke(_ac, _bc);
-            Logging.Spam?.Log($"Compare {_a.componentRef.ComponentDefID}({_ac != null},{_ac.controller.ItemWidget != null}) & {_b.componentRef.ComponentDefID}({_bc != null},{_bc.controller.ItemWidget != null}) -> {res}");
+            iieA.ComponentRef = GetRef(l);
+            iieA.controller = l;
+            iieA.controller.ItemWidget = iieA;
+            iieA.ItemType = ToDraggableType(l.componentDef);
+
+            iieB.ComponentRef = GetRef(r);
+            iieB.controller = r;
+            iieB.controller.ItemWidget = iieB;
+            iieB.ItemType = ToDraggableType(r.componentDef);
+
+            var res = cs.Invoke(iieA, iieB);
+            Logging.Spam?.Log($"Compare {iieA.ComponentRef.ComponentDefID}({iieA != null},{iieA.controller.ItemWidget != null}) & {iieB.ComponentRef.ComponentDefID}({iieB != null},{iieB.controller.ItemWidget != null}) -> {res}");
             return res;
         });
-
-        UnityEngine.Object.Destroy(go);
-        UnityEngine.Object.Destroy(go2);
 
         var delta = sw.Elapsed.TotalMilliseconds;
         Logging.Info?.Log($"Sorted in {delta} ms");
@@ -214,7 +207,7 @@ internal class MechLabFixState {
             var sw = new Stopwatch();
             sw.Start();
             var tmp = inventoryWidget.localInventory;
-            var iw = GameObjects.iieTmp;
+            var iw = GameObjects.iieTmpT;
 
             // Filter items once using the faster code, then again to handle mods.
             var okItems = Filter(items).Where(lec => {

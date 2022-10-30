@@ -17,9 +17,14 @@ internal class MechLabFixGameObjects
     private static RectTransform _DummyEnd;
 
     internal List<InventoryItemElement_NotListView> ielCache;
-    // Temporary visual element used in the filter process.
-    internal InventoryItemElement_NotListView iieTmp => _iieTmp;
-    internal static InventoryItemElement_NotListView _iieTmp;
+
+    // temporary elements
+    internal InventoryItemElement_NotListView iieTmpT => _iieTmpT;
+    private static InventoryItemElement_NotListView _iieTmpT;
+    internal InventoryItemElement_NotListView iieTmpA => _iieTmpA;
+    private static InventoryItemElement_NotListView _iieTmpA;
+    internal InventoryItemElement_NotListView iieTmpB => _iieTmpB;
+    private static InventoryItemElement_NotListView _iieTmpB;
 
     internal void Setup(MechLabInventoryWidget inventoryWidget)
     {
@@ -35,11 +40,24 @@ internal class MechLabFixGameObjects
         if (_DummyStart == null) _DummyStart = new GameObject().AddComponent<RectTransform>();
         if (_DummyEnd   == null) _DummyEnd   = new GameObject().AddComponent<RectTransform>();
 
-        if (_iieTmp == null)
+        // TODO find a good place to put these
+        if (_iieTmpT == null)
         {
-            _iieTmp = GetIIE();
-            // TODO find a good place to put this
-            _iieTmp.name = ListElementController_BASE_NotListView.INVENTORY_ELEMENT_PREFAB_NotListView + " (" + Main.ModName +")";
+            _iieTmpT = GetIIE();
+            _iieTmpT.name = ListElementController_BASE_NotListView.INVENTORY_ELEMENT_PREFAB_NotListView + " [T] (" + Main.ModName +")";
+            _iieTmpT.gameObject.SetActive(false);
+        }
+        if (_iieTmpA == null)
+        {
+            _iieTmpA = GetIIE();
+            _iieTmpA.name = ListElementController_BASE_NotListView.INVENTORY_ELEMENT_PREFAB_NotListView + " [A] (" + Main.ModName +")";
+            _iieTmpA.gameObject.SetActive(false);
+        }
+        if (_iieTmpB == null)
+        {
+            _iieTmpB = GetIIE();
+            _iieTmpB.name = ListElementController_BASE_NotListView.INVENTORY_ELEMENT_PREFAB_NotListView + " [B] (" + Main.ModName +")";
+            _iieTmpB.gameObject.SetActive(false);
         }
 
         /* Allocate very few visual elements, as this is extremely slow for both allocation and deallocation.
