@@ -35,6 +35,9 @@ public static partial class Extensions
 
     public static void LogSpam(string message)
     {
-        Main.HBSLogger.LogDebug(message);
+        if (Spam)
+        {
+            Main.HBSLogger.LogDebug(message);
+        }
     }
 }
