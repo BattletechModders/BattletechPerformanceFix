@@ -94,7 +94,7 @@ internal class MechLabFixState {
            Since only 7 visual elements are allocated, this is required.
         */
     public List<ListElementController_BASE_NotListView> Sort(List<ListElementController_BASE_NotListView> items) {
-        Extensions.LogSpam($"Sorting: {items.Select(item => GetRef(item).ComponentDefID).ToArray().Dump(false)}");
+        Extensions.Spam?.Log($"Sorting: {items.Select(item => GetRef(item).ComponentDefID).ToArray().Dump(false)}");
 
         var sw = Stopwatch.StartNew();
         var _a = new ListElementController_InventoryGear_NotListView();
@@ -107,10 +107,10 @@ internal class MechLabFixState {
         _bc.controller = _b;
         var _cs = inventoryWidget.currentSort;
         var cst = _cs.Method;
-        Extensions.LogDebug($"Sort using {cst.DeclaringType.FullName}::{cst.ToString()}");
+        Extensions.LogDebug($"Sort using {cst.DeclaringType.FullName}::{cst}");
 
         var tmp = items.ToList();
-        tmp.Sort(new Comparison<ListElementController_BASE_NotListView>((l,r) => {
+        tmp.Sort((l,r) => {
             _ac.ComponentRef = _a.componentRef = GetRef(l);
             _bc.ComponentRef = _b.componentRef = GetRef(r);
             _ac.controller = l;
@@ -120,9 +120,9 @@ internal class MechLabFixState {
             _ac.ItemType = ToDraggableType(l.componentDef);
             _bc.ItemType = ToDraggableType(r.componentDef);
             var res = _cs.Invoke(_ac, _bc);
-            Extensions.LogSpam($"Compare {_a.componentRef.ComponentDefID}({_ac != null},{_ac.controller.ItemWidget != null}) & {_b.componentRef.ComponentDefID}({_bc != null},{_bc.controller.ItemWidget != null}) -> {res}");
+            Extensions.Spam?.Log($"Compare {_a.componentRef.ComponentDefID}({_ac != null},{_ac.controller.ItemWidget != null}) & {_b.componentRef.ComponentDefID}({_bc != null},{_bc.controller.ItemWidget != null}) -> {res}");
             return res;
-        }));
+        });
 
         UnityEngine.Object.Destroy(go);
         UnityEngine.Object.Destroy(go2);
@@ -130,7 +130,7 @@ internal class MechLabFixState {
         var delta = sw.Elapsed.TotalMilliseconds;
         Extensions.LogInfo($"Sorted in {delta} ms");
 
-        Extensions.LogSpam($"Sorted: {tmp.Select(item => GetRef(item).ComponentDefID).ToArray().Dump(false)}");
+        Extensions.Spam?.Log($"Sorted: {tmp.Select(item => GetRef(item).ComponentDefID).ToArray().Dump(false)}");
 
         return tmp;
     }
@@ -321,15 +321,14 @@ internal class MechLabFixState {
         if (index < 0) {
             index = 0;
         }
-        if (Extensions.Spam) Extensions.LogSpam(
-            $"[LimitItems] Refresh(F): {index} {filteredInventory.Count} {itemLimit} {inventoryWidget.scrollbarArea.verticalNormalizedPosition}");
+        Extensions.Spam?.Log($"[LimitItems] Refresh(F): {index} {filteredInventory.Count} {itemLimit} {inventoryWidget.scrollbarArea.verticalNormalizedPosition}");
 
         Func<ListElementController_BASE_NotListView, string> pp = lec => $"[id:{GetRef(lec).ComponentDefID},damage:{GetRef(lec).DamageLevel},quantity:{lec.quantity},id:{lec.GetId()}]";
 
         var toShow = filteredInventory.Skip(index).Take(itemLimit).ToList();
         var icc = GameObjects.ielCache.ToList();
 
-        if (Extensions.Spam) Extensions.LogSpam("[LimitItems] Showing: " + string.Join(", ", toShow.Select(pp).ToArray()));
+        Extensions.Spam?.Log("[LimitItems] Showing: " + string.Join(", ", toShow.Select(pp).ToArray()));
 
         var details = new List<string>();
 
@@ -365,11 +364,7 @@ internal class MechLabFixState {
         GameObjects.DummyEnd.SetAsLastSibling();
 
         instance.RefreshInventorySelectability();
-        if (Extensions.Spam)
-        {
-            var sr = inventoryWidget.scrollbarArea;
-            Extensions.LogSpam($"[LimitItems] RefreshDone dummystart {GameObjects.DummyStart.anchoredPosition.y} dummyend {GameObjects.DummyEnd.anchoredPosition.y} vnp {sr.verticalNormalizedPosition} lli {"(" + string.Join(", ", details.ToArray()) + ")"}");
-        }
+        Extensions.Spam?.Log($"[LimitItems] RefreshDone dummystart {GameObjects.DummyStart.anchoredPosition.y} dummyend {GameObjects.DummyEnd.anchoredPosition.y} vnp {inventoryWidget.scrollbarArea.verticalNormalizedPosition} lli {"(" + string.Join(", ", details.ToArray()) + ")"}");
     }
 
     public static readonly int itemsOnScreen = 7;

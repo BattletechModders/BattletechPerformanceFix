@@ -89,7 +89,7 @@ public static class Main
 
     public static MethodBase CheckPatch(MethodBase meth, params string[] sha256s)
     {
-        LogSpam("CheckPatch is NYI");
+        Spam?.Log("CheckPatch is NYI");
         if (meth == null)
         {
             LogError("A CheckPatch recieved a null method, this is fatal");
@@ -114,7 +114,7 @@ public static class Main
         LogLevel logLevel;
         if (string.Equals(settings.logLevel, "spam", StringComparison.OrdinalIgnoreCase))
         {
-            Spam = true;
+            SpamEnabled = true;
             logLevel = LogLevel.Debug;
         }
         else if (string.Equals(settings.logLevel, "info", StringComparison.OrdinalIgnoreCase))

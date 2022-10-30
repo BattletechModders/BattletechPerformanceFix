@@ -238,7 +238,7 @@ internal class MechLabFixFeature : Feature {
 
     public static bool MechCanEquipItem_Pre(InventoryItemElement_NotListView item)
     {
-        LogSpam("[LimitItems] MechCanEquipItem_Pre");
+        Spam?.Log("[LimitItems] MechCanEquipItem_Pre");
 
         // undo "fix NRE within Pool()" from earlier
         if (item.controller != null && item.controller.componentDef == null)
