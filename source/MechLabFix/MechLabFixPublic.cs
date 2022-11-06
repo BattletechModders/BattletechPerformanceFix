@@ -14,4 +14,6 @@ public static class MechLabFixPublic
     {
         MechLabFixFeature.state?.FilterChanged();
     }
+
+    public static List<ListElementController_BASE_NotListView> RawInventory => MechLabFixFeature.state?.rawInventory;
 }
