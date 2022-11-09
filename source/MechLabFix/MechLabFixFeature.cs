@@ -18,6 +18,7 @@ internal class MechLabFixFeature : Feature {
         "ClearInventory".Pre<MechLabInventoryWidget>();
         "OnAddItem".Pre<MechLabInventoryWidget>();
         "OnRemoveItem".Pre<MechLabInventoryWidget>();
+        "OnItemGrab".Pre<MechLabInventoryWidget>();
         "ApplyFiltering".Pre<MechLabInventoryWidget>("ApplyFiltering_Pre", Priority.First);
         "MechCanEquipItem".Pre<MechLabPanel>();
         "ApplySorting".Pre<MechLabInventoryWidget>("ApplySorting_Pre", Priority.First);
@@ -248,5 +249,32 @@ internal class MechLabFixFeature : Feature {
 
         // no idea why this is here, just a NRE fix for vanilla?
         return item.ComponentRef != null;
+    }
+
+    public static void OnItemGrab_Pre(MechLabInventoryWidget __instance, ref IMechLabDraggableItem item)
+    {
+        Logging.Debug?.Log("[LimitItems] OnItemGrab_Pre");
+        try
+        {
+            if (state != null && state.inventoryWidget == __instance)
+            {
+                var nlv = item as InventoryItemElement_NotListView;
+                var iw = MechLabFixState.GameObjects.iieTmpG;
+                var lec = nlv.controller;
+                var cref = state.GetRef(lec);
+                iw.ClearEverything();
+                iw.ComponentRef = cref;
+                lec.ItemWidget = iw;
+                iw.SetData(lec, state.inventoryWidget, lec.quantity);
+                lec.SetupLook(iw);
+                iw.gameObject.SetActive(true);
+                item = iw;
+            }
+        }
+        catch (Exception e)
+        {
+            Logging.Error?.Log("Encountered exception", e);
+            throw;
+        }
     }
 }

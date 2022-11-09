@@ -25,6 +25,10 @@ internal class MechLabFixGameObjects
     private static InventoryItemElement_NotListView _iieTmpA;
     internal InventoryItemElement_NotListView iieTmpB => _iieTmpB;
     private static InventoryItemElement_NotListView _iieTmpB;
+    internal InventoryItemElement_NotListView iieTmpG => _iieTmpG;
+    private static InventoryItemElement_NotListView _iieTmpG;
+
+    private static Transform ContainerTransform;
 
     internal void Setup(MechLabInventoryWidget inventoryWidget)
     {
@@ -35,38 +39,47 @@ internal class MechLabFixGameObjects
             throw new("WTF");
         }
 
+        if (ContainerTransform == null)
+        {
+            var containerGo = new GameObject(Main.ModName);
+            containerGo.SetActive(false);
+            Object.DontDestroyOnLoad(containerGo);
+            ContainerTransform = containerGo.transform;
+        }
+
         // DummyStart&End are blank rects stored at the beginning and end of the list so that unity knows how big the scrollrect should be
         // "placeholders"
-        if (_DummyStart == null) _DummyStart = new GameObject().AddComponent<RectTransform>();
-        if (_DummyEnd   == null) _DummyEnd   = new GameObject().AddComponent<RectTransform>();
+        if (_DummyStart == null)
+        {
+            _DummyStart = new GameObject().AddComponent<RectTransform>();
+        }
+        if (_DummyEnd == null)
+        {
+            _DummyEnd = new GameObject().AddComponent<RectTransform>();
+        }
 
-        // TODO find a good place to put these
         if (_iieTmpT == null)
         {
-            _iieTmpT = GetIIE();
-            _iieTmpT.name = ListElementController_BASE_NotListView.INVENTORY_ELEMENT_PREFAB_NotListView + " [T] (" + Main.ModName +")";
-            _iieTmpT.gameObject.SetActive(false);
+            _iieTmpT = GetIIE("T");
         }
         if (_iieTmpA == null)
         {
-            _iieTmpA = GetIIE();
-            _iieTmpA.name = ListElementController_BASE_NotListView.INVENTORY_ELEMENT_PREFAB_NotListView + " [A] (" + Main.ModName +")";
-            _iieTmpA.gameObject.SetActive(false);
+            _iieTmpA = GetIIE("A");
         }
         if (_iieTmpB == null)
         {
-            _iieTmpB = GetIIE();
-            _iieTmpB.name = ListElementController_BASE_NotListView.INVENTORY_ELEMENT_PREFAB_NotListView + " [B] (" + Main.ModName +")";
-            _iieTmpB.gameObject.SetActive(false);
+            _iieTmpB = GetIIE("B");
+        }
+        if (_iieTmpG == null)
+        {
+            _iieTmpG = GetIIE("G");
         }
 
         /* Allocate very few visual elements, as this is extremely slow for both allocation and deallocation.
                    It's the difference between a couple of milliseconds and several seconds for many unique items in inventory
                    This is the core of the fix, the rest is just to make it work within HBS's existing code.
                 */
-        ielCache = Enumerable.Repeat(GetIIE, MechLabFixState.itemLimit)
-            .Select(thunk => thunk())
-            .ToList();
+        ielCache = Enumerable.Repeat((string)null, MechLabFixState.itemLimit).Select(GetIIE).ToList();
 
         foreach (var nlv in ielCache)
         {
@@ -80,11 +93,15 @@ internal class MechLabFixGameObjects
         DummyEnd.SetParent(inventoryWidget.listParent, false);
     }
 
-    private InventoryItemElement_NotListView GetIIE()
+    private InventoryItemElement_NotListView GetIIE(string id = null)
     {
-        // TODO memory leak here
-        return DataManager
-            .PooledInstantiate(ListElementController_BASE_NotListView.INVENTORY_ELEMENT_PREFAB_NotListView, BattleTechResourceType.UIModulePrefabs)
-            .GetComponent<InventoryItemElement_NotListView>();
+        var iieGo = DataManager.PooledInstantiate(ListElementController_BASE_NotListView.INVENTORY_ELEMENT_PREFAB_NotListView, BattleTechResourceType.UIModulePrefabs);
+        if (id != null)
+        {
+            iieGo.name = $"{ListElementController_BASE_NotListView.INVENTORY_ELEMENT_PREFAB_NotListView} [{id}]";
+        }
+        iieGo.transform.SetParent(ContainerTransform, false);
+        iieGo.SetActive(false); // everything from pool should already be deactivated
+        return iieGo.GetComponent<InventoryItemElement_NotListView>();
     }
 }
