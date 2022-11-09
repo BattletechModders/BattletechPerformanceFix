@@ -24,7 +24,7 @@ internal class MechLabFixFeature : Feature {
         "OnItemGrab".Pre<MechLabInventoryWidget>();
         "ApplyFiltering".Pre<MechLabInventoryWidget>("ApplyFiltering_Pre", Priority.First);
         "ApplySorting".Pre<MechLabInventoryWidget>("ApplySorting_Pre", Priority.First);
-        "RemoveDataItem".Pre<MechLabInventoryWidget>();
+        // "RemoveDataItem".Pre<MechLabInventoryWidget>();
 
         // Fix some annoying seemingly vanilla log spam
         "OnDestroy".Pre<InventoryItemElement_NotListView>(iel => { if(iel.iconMech != null) iel.iconMech.sprite = null;
