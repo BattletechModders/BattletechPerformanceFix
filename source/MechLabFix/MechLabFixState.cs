@@ -76,6 +76,11 @@ internal class MechLabFixState {
         return rawInventory.FirstOrDefault(ri => ri.componentDef == mcr.Def && mcr.DamageLevel == GetRef(ri).DamageLevel);
     }
 
+    public ListElementController_BASE_NotListView FetchItem(MechComponentDef def)
+    {
+        return rawInventory.FirstOrDefault(ri => ri.componentDef == def);
+    }
+
     public MechLabDraggableItemType ToDraggableType(MechComponentDef def) {
         switch(def.ComponentType) {
             case ComponentType.NotSet: return MechLabDraggableItemType.NOT_SET;

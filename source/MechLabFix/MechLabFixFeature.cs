@@ -24,6 +24,7 @@ internal class MechLabFixFeature : Feature {
         "OnItemGrab".Pre<MechLabInventoryWidget>();
         "ApplyFiltering".Pre<MechLabInventoryWidget>("ApplyFiltering_Pre", Priority.First);
         "ApplySorting".Pre<MechLabInventoryWidget>("ApplySorting_Pre", Priority.First);
+        "RemoveDataItem".Pre<MechLabInventoryWidget>();
 
         // Fix some annoying seemingly vanilla log spam
         "OnDestroy".Pre<InventoryItemElement_NotListView>(iel => { if(iel.iconMech != null) iel.iconMech.sprite = null;
@@ -168,31 +169,59 @@ internal class MechLabFixFeature : Feature {
         return true;
     }
 
+    public static bool RemoveDataItem_Prefix(MechLabInventoryWidget __instance, InventoryDataObject_BASE ItemData, ref bool __result)
+    {
+        Logging.Debug?.Log("[LimitItems] RemoveDataItem_Prefix");
+        try
+        {
+            if (state != null && state.inventoryWidget == __instance && __instance.IsSimGame)
+            {
+                __result = RemoveItemQuantity( state.FetchItem(ItemData.componentDef), ItemData.quantity);
+            }
+            return false;
+        }
+        catch (Exception e)
+        {
+            Logging.Error?.Log("Encountered exception", e);
+        }
+        return true;
+    }
+
     public static bool OnRemoveItem_Pre(MechLabInventoryWidget __instance, IMechLabDraggableItem item)
     {
         Logging.Debug?.Log("[LimitItems] OnRemoveItem_Pre");
         if (state != null && state.inventoryWidget == __instance) {
             try {
                 var nlv = item as InventoryItemElement_NotListView;
-
-                var existing = state.FetchItem(item.ComponentRef);
-                if (existing == null) {
-                    Logging.Error?.Log($"OnRemoveItem new (should be impossible?) {nlv.controller.quantity}");
-                } else {
-                    Logging.Debug?.Log($"OnRemoveItem existing {nlv.controller.quantity}");
-                    if (existing.quantity != Int32.MinValue) {
-                        existing.ModifyQuantity(-1);
-                        if (existing.quantity < 1)
-                            state.rawInventory.Remove(existing);
-                    }
-                    state.FilterChanged(false);
-                    state.Refresh(false);
-                }
+                RemoveItemQuantity(state.FetchItem(item.ComponentRef), nlv.controller.quantity);
             } catch(Exception e) {
                 Logging.Error?.Log("Encountered exception", e);
             }
             return false;
         }
+        return true;
+    }
+
+    private static bool RemoveItemQuantity(ListElementController_BASE_NotListView lec, int quantity)
+    {
+        if (lec == null) {
+            Logging.Error?.Log("Existing not found");
+            return false;
+        }
+
+        if (quantity == 0 || lec.quantity == int.MinValue) {
+            Logging.Error?.Log("Existing has invalid quantity");
+            return false;
+        }
+
+        Logging.Debug?.Log("Existing quantity change {quantity}");
+        lec.ModifyQuantity(-quantity);
+        if (lec.quantity < 1)
+        {
+            state.rawInventory.Remove(lec);
+        }
+        state.FilterChanged(false);
+        state.Refresh(false);
         return true;
     }
 
