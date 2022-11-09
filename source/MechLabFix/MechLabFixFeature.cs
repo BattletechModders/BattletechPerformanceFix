@@ -14,13 +14,15 @@ internal class MechLabFixFeature : Feature {
         "InitWidgets".Transpile<MechLabPanel>();
         "InitWidgets".Pre<MechLabPanel>();
         "PopulateInventory".Pre<MechLabPanel>();
+        "MechCanEquipItem".Pre<MechLabPanel>();
+
         "LateUpdate".Pre<UnityEngine.UI.ScrollRect>();
+
         "ClearInventory".Pre<MechLabInventoryWidget>();
         "OnAddItem".Pre<MechLabInventoryWidget>();
         "OnRemoveItem".Pre<MechLabInventoryWidget>();
         "OnItemGrab".Pre<MechLabInventoryWidget>();
         "ApplyFiltering".Pre<MechLabInventoryWidget>("ApplyFiltering_Pre", Priority.First);
-        "MechCanEquipItem".Pre<MechLabPanel>();
         "ApplySorting".Pre<MechLabInventoryWidget>("ApplySorting_Pre", Priority.First);
 
         // Fix some annoying seemingly vanilla log spam
