@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.Linq;
 using BattleTech;
 using BattleTech.UI;
+using UnityEngine;
+using UnityEngine.UI;
 
 namespace BattletechPerformanceFix.MechLabFix;
 
@@ -28,8 +30,9 @@ internal class MechLabFixState {
     public List<ListElementController_BASE_NotListView> filteredInventory;
 
     // Index of current item element at the top of scrollrect
-    public int index = 0;
-    public int endIndex = 0;
+    public int rowToStartLoading = 0;
+    public int rowCountBelowScreen = 0;
+    public int rowMaxToStartLoading = 0;
 
     public MechLabFixState(MechLabPanel instance) {
         var sw = new Stopwatch();
@@ -294,33 +297,25 @@ internal class MechLabFixState {
                 , resetIndex));
             if (resetIndex) {
                 inventoryWidget.scrollbarArea.verticalNormalizedPosition = 1.0f;
-                index = 0;
+                rowToStartLoading = 0;
             }
 
             filteredInventory = MechLabFixPublic.FilterFunc(rawInventory);
-            endIndex = filteredInventory.Count - itemsOnScreen;
+            rowCountBelowScreen = Mathf.Max(0, filteredInventory.Count - itemsOnScreen);
+            rowMaxToStartLoading = Mathf.Max(0, rowCountBelowScreen - rowBufferCount);
+            rowToStartLoading = Mathf.Clamp(rowToStartLoading, 0, rowMaxToStartLoading);
             Refresh();
         } catch (Exception e) {
             Logging.Error?.Log("Encountered exception", e);
         }
     }
 
-    public void Refresh(bool wantClobber = true) {
-        Logging.Debug?.Log($"[LimitItems] Refresh: {index} {filteredInventory.Count} {itemLimit} {inventoryWidget.scrollbarArea.verticalNormalizedPosition}");
-        if (index > filteredInventory.Count - itemsOnScreen) {
-            index = filteredInventory.Count - itemsOnScreen;
-        }
-        if (filteredInventory.Count < itemsOnScreen) {
-            index = 0;
-        }
-        if (index < 0) {
-            index = 0;
-        }
-        Logging.Spam?.Log($"[LimitItems] Refresh(F): {index} {filteredInventory.Count} {itemLimit} {inventoryWidget.scrollbarArea.verticalNormalizedPosition}");
+    public void Refresh() {
+        Logging.Debug?.Log($"[LimitItems] Refresh: {rowToStartLoading} {filteredInventory.Count} {itemLimit} {inventoryWidget.scrollbarArea.verticalNormalizedPosition}");
 
         Func<ListElementController_BASE_NotListView, string> pp = lec => $"[id:{GetRef(lec).ComponentDefID},damage:{GetRef(lec).DamageLevel},quantity:{lec.quantity},id:{lec.GetId()}]";
 
-        var toShow = filteredInventory.Skip(index).Take(itemLimit).ToList();
+        var toShow = filteredInventory.Skip(rowToStartLoading).Take(itemLimit).ToList();
         var icc = GameObjects.ielCache.ToList();
 
         Logging.Spam?.Log("[LimitItems] Showing: " + string.Join(", ", toShow.Select(pp).ToArray()));
@@ -341,30 +336,30 @@ internal class MechLabFixState {
         });
         icc.ForEach(unused => unused.gameObject.SetActive(false));
 
-        var listElemSize = 64.0f;
-        var spacerTotal  = 16.0f; // IEL elements are 64 tall, but have a total of 80 pixels between each when considering spacing.
-        var spacerHalf   = spacerTotal * .5f;
-        var tsize        = listElemSize + spacerTotal;
-            
-        var virtualStartSize = tsize * index - spacerHalf;
-        GameObjects.DummyStart.gameObject.SetActive(index > 0); //If nothing prefixing, must disable to prevent halfspacer offset.
-        GameObjects.DummyStart.sizeDelta = new(100, virtualStartSize);
-        GameObjects.DummyStart.SetAsFirstSibling();
+        var elementHeight = 64;
+        var spacingY = 16;
+        var halfSpacingY = spacingY / 2;
+        var paddingY = elementHeight + spacingY;
 
-        var itemsHanging = filteredInventory.Count - (index + GameObjects.ielCache.Count(ii => ii.gameObject.activeSelf));
+        var topCount = rowToStartLoading;
+        var bottomCount = filteredInventory.Count - (rowToStartLoading + GameObjects.ielCache.Count(ii => ii.gameObject.activeSelf));
 
-        var virtualEndSize = tsize * itemsHanging - spacerHalf;
-        GameObjects.DummyEnd.gameObject.SetActive(itemsHanging > 0); //If nothing postfixing, must disable to prevent halfspacer offset.
-        GameObjects.DummyEnd.sizeDelta = new(100, virtualEndSize);
-        GameObjects.DummyEnd.SetAsLastSibling();
+        var vlg = inventoryWidget.listParent.GetComponent<VerticalLayoutGroup>();
+        var padding = vlg.padding;
+        padding.top = 12 + (topCount > 0 ? paddingY * topCount - halfSpacingY : 0);
+        padding.bottom = 12 + (bottomCount > 0 ? paddingY * bottomCount - halfSpacingY : 0);
+        vlg.padding = padding;
+
+        LayoutRebuilder.MarkLayoutForRebuild(vlg.GetComponent<RectTransform>());
 
         instance.RefreshInventorySelectability();
-        Logging.Spam?.Log($"[LimitItems] RefreshDone dummystart {GameObjects.DummyStart.anchoredPosition.y} dummyend {GameObjects.DummyEnd.anchoredPosition.y} vnp {inventoryWidget.scrollbarArea.verticalNormalizedPosition} lli {"(" + string.Join(", ", details.ToArray()) + ")"}");
+        Logging.Spam?.Log($"[LimitItems] RefreshDone dummystart {padding} vnp {inventoryWidget.scrollbarArea.verticalNormalizedPosition} lli {"(" + string.Join(", ", details.ToArray()) + ")"}");
     }
 
     public static readonly int itemsOnScreen = 7;
     // Maximum # of visual elements to allocate (will be used for slightly off screen elements.)
-    internal static readonly int itemLimit = 8;
+    internal static readonly int rowBufferCount = 1;
+    internal static readonly int itemLimit = itemsOnScreen + rowBufferCount;
 
     public static bool filterGuard = false;
 }

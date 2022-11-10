@@ -5,7 +5,7 @@ using System.Reflection.Emit;
 using BattleTech;
 using BattleTech.UI;
 using Harmony;
-using static BattletechPerformanceFix.Extensions;
+using UnityEngine;
 
 namespace BattletechPerformanceFix.MechLabFix;
 
@@ -112,14 +112,12 @@ internal class MechLabFixFeature : Feature {
         try
         {
             if (state != null && state.inventoryWidget.scrollbarArea == __instance) {
-                var newIndex = (int)((state.endIndex) * (1.0f - __instance.verticalNormalizedPosition));
-                if (state.filteredInventory.Count < MechLabFixState.itemsOnScreen) {
-                    newIndex = 0;
-                }
-                if (state.index != newIndex) {
-                    state.index = newIndex;
-                    Logging.Debug?.Log($"[LimitItems] Refresh with: {newIndex} {__instance.verticalNormalizedPosition}");
-                    state.Refresh(false);
+                var newIndexCandidate = (int)((state.rowCountBelowScreen) * (1.0f - __instance.verticalNormalizedPosition));
+                newIndexCandidate = Mathf.Clamp(newIndexCandidate, 0, state.rowMaxToStartLoading);
+                if (state.rowToStartLoading != newIndexCandidate) {
+                    state.rowToStartLoading = newIndexCandidate;
+                    Logging.Debug?.Log($"[LimitItems] Refresh with: {newIndexCandidate} {__instance.verticalNormalizedPosition}");
+                    state.Refresh();
                 }
             }
         }
@@ -159,7 +157,7 @@ internal class MechLabFixFeature : Feature {
                     if (existing.quantity != Int32.MinValue) {
                         existing.ModifyQuantity(quantity);
                     }
-                    state.Refresh(false);
+                    state.Refresh();
                 }
             } catch(Exception e) {
                 Logging.Error?.Log("Encountered exception", e);
@@ -221,7 +219,7 @@ internal class MechLabFixFeature : Feature {
             state.rawInventory.Remove(lec);
         }
         state.FilterChanged(false);
-        state.Refresh(false);
+        state.Refresh();
         return true;
     }
 

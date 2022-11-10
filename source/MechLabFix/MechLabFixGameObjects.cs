@@ -11,11 +11,6 @@ internal class MechLabFixGameObjects
 {
     private DataManager DataManager => UnityGameInstance.BattleTechGame.DataManager;
 
-    internal RectTransform DummyStart => _DummyStart;
-    internal RectTransform DummyEnd => _DummyEnd;
-    private static RectTransform _DummyStart;
-    private static RectTransform _DummyEnd;
-
     internal List<InventoryItemElement_NotListView> ielCache;
 
     // temporary elements
@@ -45,17 +40,6 @@ internal class MechLabFixGameObjects
             containerGo.SetActive(false);
             Object.DontDestroyOnLoad(containerGo);
             ContainerTransform = containerGo.transform;
-        }
-
-        // DummyStart&End are blank rects stored at the beginning and end of the list so that unity knows how big the scrollrect should be
-        // "placeholders"
-        if (_DummyStart == null)
-        {
-            _DummyStart = new GameObject().AddComponent<RectTransform>();
-        }
-        if (_DummyEnd == null)
-        {
-            _DummyEnd = new GameObject().AddComponent<RectTransform>();
         }
 
         if (_iieTmpT == null)
@@ -88,9 +72,6 @@ internal class MechLabFixGameObjects
             nlv.gameObject.transform.localScale = Vector3.one;
         }
         inventoryWidget.localInventory.AddRange(ielCache);
-
-        DummyStart.SetParent(inventoryWidget.listParent, false);
-        DummyEnd.SetParent(inventoryWidget.listParent, false);
     }
 
     private InventoryItemElement_NotListView GetIIE(string id = null)
