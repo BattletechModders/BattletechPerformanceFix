@@ -2,7 +2,7 @@
   "logLevel": "debug",
   "features": {
     "LocalizationPatches": false,
-    "MechLabFixFeature": true,
+    "MechLabFixFeature": false,
     "LoadFixes": false,
     "NoSalvageSoftlock": false,
     "DataLoaderGetEntryCheck": false,

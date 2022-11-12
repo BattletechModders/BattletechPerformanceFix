@@ -31,7 +31,7 @@ public static class Main
 
         var allFeatures = new Dictionary<Type, bool> {
             { typeof(LocalizationPatches), true },
-            { typeof(MechLabFixFeature), true },
+            { typeof(MechLabFixFeature), false },
             { typeof(LoadFixes), true },
             { typeof(NoSalvageSoftlock), true },
             { typeof(DataLoaderGetEntryCheck), true },
