@@ -1,5 +1,4 @@
 {
-  "logLevel": "debug",
   "features": {
     "LocalizationPatches": false,
     "MechLabFixFeature": false,
