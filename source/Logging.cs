@@ -1,77 +1,95 @@
-﻿using System;
+﻿#nullable enable
+using System;
+using Harmony;
 using HBS.Logging;
 
 namespace BattletechPerformanceFix;
 
-// see Better(Level)Logger from ME for concept
 internal static class Logging
 {
-    private static ILog _logger;
+    internal static LevelLogger? Error;
+    internal static LevelLogger? Warning;
+    internal static LevelLogger? Info;
+    internal static LevelLogger? Debug;
+    internal static LevelLogger? Trace;
 
-    internal static PerformanceLogger Error { get; private set; }
-    internal static PerformanceLogger Warn { get; private set; }
-    internal static PerformanceLogger Info { get; private set; }
-    internal static PerformanceLogger Debug { get; private set; }
-    internal static PerformanceLogger Spam { get; private set; }
-
-    internal static void Setup(string settingsLogLevel)
+    static Logging()
     {
-        LogLevel logLevel;
-        if (string.Equals(settingsLogLevel, "spam", StringComparison.OrdinalIgnoreCase))
+        RefreshLogLevel();
+        TrackLoggerLevelChanges();
+    }
+
+    private static readonly ILog LOG = Logger.GetLogger(nameof(BattletechPerformanceFix), LogLevel.Debug);
+    private static void TrackLoggerLevelChanges()
+    {
+        HarmonyInstance
+            .Create(typeof(Logging).FullName)
+            .Patch(
+                original: typeof(Logger).GetMethod(nameof(Logger.SetLoggerLevel)),
+                postfix: new(typeof(Logging), nameof(Logger_SetLoggerLevel_Postfix))
+            );
+    }
+    private static void Logger_SetLoggerLevel_Postfix(string name)
+    {
+        try
         {
-            Spam = new(LogLevel.Debug);
-            logLevel = LogLevel.Debug;
+            if (name == LOG.Name)
+            {
+                RefreshLogLevel();
+            }
         }
-        else if (string.Equals(settingsLogLevel, "info", StringComparison.OrdinalIgnoreCase))
+        catch (Exception e)
         {
-            logLevel = LogLevel.Log;
+            Error?.Log(e);
         }
-        else if (Enum.TryParse<LogLevel>(settingsLogLevel, out var level))
+    }
+
+    private static void RefreshLogLevel()
+    {
+        SyncLevelLogger(LogLevel.Error, ref Error);
+        SyncLevelLogger(LogLevel.Warning, ref Warning);
+        SyncLevelLogger(LogLevel.Log, ref Info);
+        SyncLevelLogger(LogLevel.Debug, ref Debug);
+        SyncLevelLogger((LogLevel)200, ref Trace);
+    }
+
+    private static void SyncLevelLogger(LogLevel logLevel, ref LevelLogger? field)
+    {
+        var log = (Logger.LogImpl)LOG;
+        if (log.IsEnabledFor(logLevel))
         {
-            logLevel = level;
+            field ??= new(LOG, logLevel);
         }
         else
         {
-            logLevel = LogLevel.Debug;
+            field = null;
         }
-
-        if (logLevel <= LogLevel.Error)
-        {
-            Error = new(LogLevel.Error);
-        }
-        if (logLevel <= LogLevel.Warning)
-        {
-            Warn = new(LogLevel.Warning);
-        }
-        if (logLevel <= LogLevel.Log)
-        {
-            Info = new(LogLevel.Log);
-        }
-        if (logLevel <= LogLevel.Debug)
-        {
-            Debug = new(LogLevel.Debug);
-        }
-
-        _logger = Logger.GetLogger(Main.ModName, logLevel);
     }
 
-    internal class PerformanceLogger
+    internal sealed class LevelLogger
     {
-        private readonly LogLevel _level;
+        private readonly ILog log;
+        private readonly LogLevel level;
 
-        internal PerformanceLogger(LogLevel level)
+        internal LevelLogger(ILog log, LogLevel level)
         {
-            _level = level;
+            this.log = log;
+            this.level = level;
         }
 
-        internal void Log(object message)
+        public void Log(object message)
         {
-            _logger.LogAtLevel(_level, message);
+            log.LogAtLevel(level, message);
         }
 
-        internal void Log(object message, Exception e)
+        public void Log(object message, Exception e)
         {
-            _logger.LogAtLevel(_level, message, e);
+            log.LogAtLevel(level, message, e);
+        }
+
+        public void Log(Exception e)
+        {
+            log.LogAtLevel(level, null, e);
         }
     }
 }

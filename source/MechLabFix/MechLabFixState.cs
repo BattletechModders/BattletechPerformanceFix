@@ -102,7 +102,7 @@ internal class MechLabFixState {
            Since only 7 visual elements are allocated, this is required.
         */
     public List<ListElementController_BASE_NotListView> Sort(List<ListElementController_BASE_NotListView> items) {
-        Logging.Spam?.Log($"Sorting: {items.Select(item => GetRef(item).ComponentDefID).ToArray().Dump(false)}");
+        Logging.Trace?.Log($"Sorting: {items.Select(item => GetRef(item).ComponentDefID).ToArray().Dump(false)}");
 
         var sw = Stopwatch.StartNew();
         var cs = inventoryWidget.currentSort;
@@ -124,14 +124,14 @@ internal class MechLabFixState {
             iieB.ItemType = ToDraggableType(r.componentDef);
 
             var res = cs.Invoke(iieA, iieB);
-            Logging.Spam?.Log($"Compare {iieA.ComponentRef.ComponentDefID}({iieA != null},{iieA.controller.ItemWidget != null}) & {iieB.ComponentRef.ComponentDefID}({iieB != null},{iieB.controller.ItemWidget != null}) -> {res}");
+            Logging.Trace?.Log($"Compare {iieA.ComponentRef.ComponentDefID}({iieA != null},{iieA.controller.ItemWidget != null}) & {iieB.ComponentRef.ComponentDefID}({iieB != null},{iieB.controller.ItemWidget != null}) -> {res}");
             return res;
         });
 
         var delta = sw.Elapsed.TotalMilliseconds;
         Logging.Info?.Log($"Sorted in {delta} ms");
 
-        Logging.Spam?.Log($"Sorted: {tmp.Select(item => GetRef(item).ComponentDefID).ToArray().Dump(false)}");
+        Logging.Trace?.Log($"Sorted: {tmp.Select(item => GetRef(item).ComponentDefID).ToArray().Dump(false)}");
 
         return tmp;
     }
@@ -318,7 +318,7 @@ internal class MechLabFixState {
         var toShow = filteredInventory.Skip(rowToStartLoading).Take(itemLimit).ToList();
         var icc = GameObjects.ielCache.ToList();
 
-        Logging.Spam?.Log("[LimitItems] Showing: " + string.Join(", ", toShow.Select(pp).ToArray()));
+        Logging.Trace?.Log("[LimitItems] Showing: " + string.Join(", ", toShow.Select(pp).ToArray()));
 
         var details = new List<string>();
 
@@ -353,7 +353,7 @@ internal class MechLabFixState {
         LayoutRebuilder.MarkLayoutForRebuild(vlg.GetComponent<RectTransform>());
 
         instance.RefreshInventorySelectability();
-        Logging.Spam?.Log($"[LimitItems] RefreshDone dummystart {padding} vnp {inventoryWidget.scrollbarArea.verticalNormalizedPosition} lli {"(" + string.Join(", ", details.ToArray()) + ")"}");
+        Logging.Trace?.Log($"[LimitItems] RefreshDone dummystart {padding} vnp {inventoryWidget.scrollbarArea.verticalNormalizedPosition} lli {"(" + string.Join(", ", details.ToArray()) + ")"}");
     }
 
     public static readonly int itemsOnScreen = 7;

@@ -5,5 +5,13 @@
 
 	"DependsOn": [],
 	"DLL": "BattletechPerformanceFix.dll",
-	"DLLEntryPoint": "BattletechPerformanceFix.Main.Start"
+	"DLLEntryPoint": "BattletechPerformanceFix.Main.Start",
+
+	"Manifest": [
+		{
+			"Type": "AdvancedJSONMerge",
+			"Path": "advancedjsonmerge",
+			"ShouldMergeJSON": false
+		}
+	]
 }

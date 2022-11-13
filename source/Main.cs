@@ -85,7 +85,7 @@ public static class Main
 
     public static MethodBase CheckPatch(MethodBase meth, params string[] sha256s)
     {
-        Logging.Spam?.Log("CheckPatch is NYI");
+        Logging.Trace?.Log("CheckPatch is NYI");
         if (meth == null)
         {
             Logging.Error?.Log("A CheckPatch recieved a null method, this is fatal");
@@ -107,11 +107,9 @@ public static class Main
             settingsEx = e;
         }
 
-        Logging.Setup(settings.logLevel);
-
         if (settingsEx != null)
         {
-            Logging.Warn?.Log("Settings file is invalid or missing, using defaults", settingsEx);
+            Logging.Warning?.Log("Settings file is invalid or missing, using defaults", settingsEx);
         }
     }
 }

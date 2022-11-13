@@ -1,0 +1,14 @@
+{
+	"TargetID": "settings",
+	"Instructions": [
+		{
+			"JSONPath": "loggerLevels",
+			"Action": "ArrayAdd",
+			"Value":
+			{
+				"k" : "BattletechPerformanceFix",
+				"v" : "200"
+			}
+		}
+	]
+}

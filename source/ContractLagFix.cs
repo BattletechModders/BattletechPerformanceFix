@@ -58,7 +58,7 @@ class ContractLagFix : Feature
             var cached = eld_cache.Where(c => c != null && c.isActiveAndEnabled).FirstOrDefault();
 
             if (Main.settings.WantContractsLagFixVerify) {
-                Logging.Spam?.Log("Verify ELD");
+                Logging.Trace?.Log("Verify ELD");
                 var wants = UnityEngine.Object.FindObjectOfType<EncounterLayerData>();
 
                 Trap(() => {
