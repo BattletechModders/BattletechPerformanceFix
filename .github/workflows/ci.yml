@@ -1,0 +1,19 @@
+﻿on: push
+name: CI
+
+jobs:
+  build:
+    uses: BattletechModders/ModTek/.github/workflows/mod-builder.yml@master
+    with:
+      checkout-directory: 'BATTLETECH/Mods/BattletechPerformanceFix'
+      build-script: |
+        dotnet build --configuration Release -p:BattleTechGameDir="$BATTLETECH_DIR/"
+        (
+        cd ..
+        INCLUDES="-ir!BattletechPerformanceFix -xr!source -xr!.* -x!*.sln -x!*.DotSettings"
+        7z a -tzip -mx9 "$DIST_DIR/BattletechPerformanceFix.zip" $INCLUDES
+        )
+      release-notes: |
+        Works best with ModTek V3
+        - BattletechPerformanceFix.zip contains the mod
+    secrets: inherit
