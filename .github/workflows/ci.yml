@@ -7,11 +7,15 @@ jobs:
     with:
       checkout-directory: 'BATTLETECH/Mods/BattletechPerformanceFix'
       build-script: |
-        dotnet build --configuration Release -p:BattleTechGameDir="$BATTLETECH_DIR/"
         (
-        cd ..
-        INCLUDES="-ir!BattletechPerformanceFix -xr!source -xr!.* -x!*.sln -x!*.DotSettings"
-        7z a -tzip -mx9 "$DIST_DIR/BattletechPerformanceFix.zip" $INCLUDES
+          cd source
+          dotnet build -c Release -p:BattleTechGameDir="$BATTLETECH_DIR/"
+        )
+        (
+          cd ..
+          7z a -tzip -mx9 "$DIST_DIR/BattletechPerformanceFix.zip" \
+            -ir!BattletechPerformanceFix \
+            -xr!source "-xr!.*"
         )
       release-notes: |
         Works best with ModTek V3
