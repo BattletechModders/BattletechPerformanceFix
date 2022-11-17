@@ -49,25 +49,25 @@ internal class MechLabFixFeature : Feature {
 
     public static SG_Shop_Screen CreateUIModule(UIManager uiManager, string prefabOverride = "", bool resort = true)
     {
-        Logging.Debug?.Log("[LimitItems] CreateUIModule");
+        Log.Main.Debug?.Log("[LimitItems] CreateUIModule");
         try {
             return uiManager.GetOrCreateUIModule<SG_Shop_Screen>(prefabOverride, resort);
         } catch(Exception e) {
-            Logging.Error?.Log("Encountered exception", e);
+            Log.Main.Error?.Log("Encountered exception", e);
             throw;
         }
     }
 
     public static void InitWidgets_Pre(MechLabPanel __instance)
     {
-        Logging.Debug?.Log("[LimitItems] InitWidgets_Pre");
+        Log.Main.Debug?.Log("[LimitItems] InitWidgets_Pre");
         try {
             if (__instance.Shop != null)
             {
                 __instance.Shop.Pool();
             }
         } catch(Exception e) {
-            Logging.Error?.Log("Encountered exception", e);
+            Log.Main.Error?.Log("Encountered exception", e);
         }
     }
 
@@ -77,24 +77,24 @@ internal class MechLabFixFeature : Feature {
 
     public static bool PopulateInventory_Pre(MechLabPanel __instance)
     {
-        Logging.Debug?.Log("[LimitItems] PopulateInventory_Pre");
+        Log.Main.Debug?.Log("[LimitItems] PopulateInventory_Pre");
         // return;
         try
         {
             MechLabFixState.GameObjects.Setup(__instance.inventoryWidget);
             state = new(__instance);
         } catch(Exception e) {
-            Logging.Error?.Log("Encountered exception", e);
+            Log.Main.Error?.Log("Encountered exception", e);
         }
         return false;
     }
 
     public static void ClearInventory_Pre(MechLabInventoryWidget __instance)
     {
-        Logging.Debug?.Log("[LimitItems] ClearInventory_Pre");
+        Log.Main.Debug?.Log("[LimitItems] ClearInventory_Pre");
         try
         {
-            Logging.Debug?.Log($"inventoryCount={__instance.localInventory?.Count}");
+            Log.Main.Debug?.Log($"inventoryCount={__instance.localInventory?.Count}");
             foreach (var iie in __instance.localInventory)
             {
                 // fix NRE within Pool()
@@ -103,7 +103,7 @@ internal class MechLabFixFeature : Feature {
                 iie.controller.ItemWidget = iie;
             }
         } catch(Exception e) {
-            Logging.Error?.Log("Encountered exception", e);
+            Log.Main.Error?.Log("Encountered exception", e);
         }
     }
 
@@ -116,27 +116,27 @@ internal class MechLabFixFeature : Feature {
                 newIndexCandidate = Mathf.Clamp(newIndexCandidate, 0, state.rowMaxToStartLoading);
                 if (state.rowToStartLoading != newIndexCandidate) {
                     state.rowToStartLoading = newIndexCandidate;
-                    Logging.Debug?.Log($"[LimitItems] Refresh with: {newIndexCandidate} {__instance.verticalNormalizedPosition}");
+                    Log.Main.Debug?.Log($"[LimitItems] Refresh with: {newIndexCandidate} {__instance.verticalNormalizedPosition}");
                     state.Refresh();
                 }
             }
         }
         catch (Exception e)
         {
-            Logging.Error?.Log("Encountered exception", e);
+            Log.Main.Error?.Log("Encountered exception", e);
         }
     }
 
     public static bool OnAddItem_Pre(MechLabInventoryWidget __instance, IMechLabDraggableItem item)
     {
-        Logging.Debug?.Log("[LimitItems] OnAddItem_Pre");
+        Log.Main.Debug?.Log("[LimitItems] OnAddItem_Pre");
         if (state != null && state.inventoryWidget == __instance) {
             try {
                 var nlv = item as InventoryItemElement_NotListView;
                 var quantity = nlv == null ? 1 : nlv.controller.quantity;
                 var existing = state.FetchItem(item.ComponentRef);
                 if (existing == null) {
-                    Logging.Debug?.Log($"OnAddItem new {quantity}");
+                    Log.Main.Debug?.Log($"OnAddItem new {quantity}");
                     var controller = nlv == null ? null : nlv.controller;
                     if (controller == null) {
                         if (item.ComponentRef.ComponentDefType == ComponentType.Weapon) {
@@ -153,14 +153,14 @@ internal class MechLabFixFeature : Feature {
                     state.rawInventory = state.Sort(state.rawInventory);
                     state.FilterChanged(false);
                 } else {
-                    Logging.Debug?.Log($"OnAddItem existing {quantity}");
+                    Log.Main.Debug?.Log($"OnAddItem existing {quantity}");
                     if (existing.quantity != Int32.MinValue) {
                         existing.ModifyQuantity(quantity);
                     }
                     state.Refresh();
                 }
             } catch(Exception e) {
-                Logging.Error?.Log("Encountered exception", e);
+                Log.Main.Error?.Log("Encountered exception", e);
             }
             return false;
         }
@@ -169,7 +169,7 @@ internal class MechLabFixFeature : Feature {
 
     public static bool RemoveDataItem_Prefix(MechLabInventoryWidget __instance, InventoryDataObject_BASE ItemData, ref bool __result)
     {
-        Logging.Debug?.Log("[LimitItems] RemoveDataItem_Prefix");
+        Log.Main.Debug?.Log("[LimitItems] RemoveDataItem_Prefix");
         try
         {
             if (state != null && state.inventoryWidget == __instance && __instance.IsSimGame)
@@ -180,20 +180,20 @@ internal class MechLabFixFeature : Feature {
         }
         catch (Exception e)
         {
-            Logging.Error?.Log("Encountered exception", e);
+            Log.Main.Error?.Log("Encountered exception", e);
         }
         return true;
     }
 
     public static bool OnRemoveItem_Pre(MechLabInventoryWidget __instance, IMechLabDraggableItem item)
     {
-        Logging.Debug?.Log("[LimitItems] OnRemoveItem_Pre");
+        Log.Main.Debug?.Log("[LimitItems] OnRemoveItem_Pre");
         if (state != null && state.inventoryWidget == __instance) {
             try {
                 var nlv = item as InventoryItemElement_NotListView;
                 RemoveItemQuantity(state.FetchItem(item.ComponentRef), nlv.controller.quantity);
             } catch(Exception e) {
-                Logging.Error?.Log("Encountered exception", e);
+                Log.Main.Error?.Log("Encountered exception", e);
             }
             return false;
         }
@@ -203,16 +203,16 @@ internal class MechLabFixFeature : Feature {
     private static bool RemoveItemQuantity(ListElementController_BASE_NotListView lec, int quantity)
     {
         if (lec == null) {
-            Logging.Error?.Log("Existing not found");
+            Log.Main.Error?.Log("Existing not found");
             return false;
         }
 
         if (quantity == 0 || lec.quantity == int.MinValue) {
-            Logging.Error?.Log("Existing has invalid quantity");
+            Log.Main.Error?.Log("Existing has invalid quantity");
             return false;
         }
 
-        Logging.Debug?.Log("Existing quantity change {quantity}");
+        Log.Main.Debug?.Log("Existing quantity change {quantity}");
         lec.ModifyQuantity(-quantity);
         if (lec.quantity < 1)
         {
@@ -225,11 +225,11 @@ internal class MechLabFixFeature : Feature {
 
     public static bool ApplyFiltering_Pre(MechLabInventoryWidget __instance, bool refreshPositioning)
     {
-        Logging.Debug?.Log("[LimitItems] ApplyFiltering_Pre");
+        Log.Main.Debug?.Log("[LimitItems] ApplyFiltering_Pre");
         try
         {
             if (state != null && state.inventoryWidget == __instance && !MechLabFixState.filterGuard) {
-                Logging.Debug?.Log($"OnApplyFiltering (refresh-pos? {refreshPositioning})");
+                Log.Main.Debug?.Log($"OnApplyFiltering (refresh-pos? {refreshPositioning})");
                 state.FilterChanged(refreshPositioning);
                 return false;
             } else {
@@ -238,21 +238,21 @@ internal class MechLabFixFeature : Feature {
         }
         catch (Exception e)
         {
-            Logging.Error?.Log("Encountered exception", e);
+            Log.Main.Error?.Log("Encountered exception", e);
             throw;
         }
     }
 
     public static bool ApplySorting_Pre(MechLabInventoryWidget __instance)
     {
-        Logging.Debug?.Log("[LimitItems] ApplySorting_Pre");
+        Log.Main.Debug?.Log("[LimitItems] ApplySorting_Pre");
         try
         {
             if (state != null && state.inventoryWidget == __instance) {
                 // it's a mechlab screen, we do our own sort.
                 var _cs = __instance.currentSort;
                 var cst = _cs.Method;
-                Logging.Debug?.Log($"OnApplySorting using {cst.DeclaringType.FullName}::{cst}");
+                Log.Main.Debug?.Log($"OnApplySorting using {cst.DeclaringType.FullName}::{cst}");
                 state.FilterChanged(false);
                 return false;
             } else {
@@ -261,14 +261,14 @@ internal class MechLabFixFeature : Feature {
         }
         catch (Exception e)
         {
-            Logging.Error?.Log("Encountered exception", e);
+            Log.Main.Error?.Log("Encountered exception", e);
             throw;
         }
     }
 
     public static bool MechCanEquipItem_Pre(InventoryItemElement_NotListView item)
     {
-        Logging.Trace?.Log("[LimitItems] MechCanEquipItem_Pre");
+        Log.Main.Trace?.Log("[LimitItems] MechCanEquipItem_Pre");
 
         // undo "fix NRE within Pool()" from earlier
         if (item.controller != null && item.controller.componentDef == null)
@@ -282,7 +282,7 @@ internal class MechLabFixFeature : Feature {
 
     public static void OnItemGrab_Pre(MechLabInventoryWidget __instance, ref IMechLabDraggableItem item)
     {
-        Logging.Debug?.Log("[LimitItems] OnItemGrab_Pre");
+        Log.Main.Debug?.Log("[LimitItems] OnItemGrab_Pre");
         try
         {
             if (state != null && state.inventoryWidget == __instance)
@@ -302,7 +302,7 @@ internal class MechLabFixFeature : Feature {
         }
         catch (Exception e)
         {
-            Logging.Error?.Log("Encountered exception", e);
+            Log.Main.Error?.Log("Encountered exception", e);
             throw;
         }
     }

@@ -1,7 +1,5 @@
 ﻿using BattleTech;
 using BattleTech.Save;
-using BattleTech.Framework;
-using HBS.Data;
 
 namespace BattletechPerformanceFix;
 

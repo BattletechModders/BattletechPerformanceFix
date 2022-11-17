@@ -14,20 +14,20 @@ class ExtraLogging : Feature
     }
 
     public static void RequestLance_Pre(int requestedDifficulty, Contract contract, int ___lanceDifficultyAdjustment) {
-        Logging.Info?.Log($"(CL) LanceOverride::RequestLance :contract.Name {contract?.Name} :requestedDifficulty {requestedDifficulty} :lanceDifficultyAdjustment {___lanceDifficultyAdjustment} :contract.Difficulty {contract?.Difficulty}");
+        Log.Main.Info?.Log($"(CL) LanceOverride::RequestLance :contract.Name {contract?.Name} :requestedDifficulty {requestedDifficulty} :lanceDifficultyAdjustment {___lanceDifficultyAdjustment} :contract.Difficulty {contract?.Difficulty}");
     }
 
     public static void PrepContract_Pre(SimGameState __instance, Contract contract, StarSystem system) {
         var GD = system.Def.GetDifficulty(__instance.SimGameMode);
-        Logging.Info?.Log($"(CL) SimGameState::PrepContract(pre) :contract.Name {contract?.Name} :contract.Difficulty {contract?.Difficulty} :GetDifficulty {GD} :GlobalDifficulty {__instance.GlobalDifficulty} :ContractDifficultyVariance {__instance.Constants.Story.ContractDifficultyVariance}");
+        Log.Main.Info?.Log($"(CL) SimGameState::PrepContract(pre) :contract.Name {contract?.Name} :contract.Difficulty {contract?.Difficulty} :GetDifficulty {GD} :GlobalDifficulty {__instance.GlobalDifficulty} :ContractDifficultyVariance {__instance.Constants.Story.ContractDifficultyVariance}");
     }
 
     public static void PrepContract_Post(SimGameState __instance, Contract contract, StarSystem system) {
         var fd = Trap(() => contract?.Override.finalDifficulty);
-        Logging.Info?.Log($"(CL) SimGameState::PrepContract(post) :contract.Name {contract?.Name} :contract.Difficulty {contract?.Difficulty} :contract.Override.finalDifficulty {fd} :UIDifficulty {contract?.Override?.GetUIDifficulty()}");
+        Log.Main.Info?.Log($"(CL) SimGameState::PrepContract(post) :contract.Name {contract?.Name} :contract.Difficulty {contract?.Difficulty} :contract.Override.finalDifficulty {fd} :UIDifficulty {contract?.Override?.GetUIDifficulty()}");
     }
 
     public static void InitializeTaggedLance_Pre() {
-        Logging.Info?.Log($"(CL) Initialize tagged lance (hardcoded difficulty 5)");
+        Log.Main.Info?.Log($"(CL) Initialize tagged lance (hardcoded difficulty 5)");
     }
 }

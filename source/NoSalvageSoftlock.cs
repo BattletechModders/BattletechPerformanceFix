@@ -1,7 +1,6 @@
 ﻿using Harmony;
 using System;
 using BattleTech.UI;
-using static BattletechPerformanceFix.Extensions;
 
 namespace BattletechPerformanceFix;
 
@@ -31,12 +30,12 @@ public class NoSalvageSoftlock : Feature
             {
                 num = 7;
             }
-            Logging.Debug?.Log($"HasAllPriority :negotiated {negotiated} :available {totalSalvageMadeAvailable} :selected {count} :clamped {num}");
+            Log.Main.Debug?.Log($"HasAllPriority :negotiated {negotiated} :available {totalSalvageMadeAvailable} :selected {count} :clamped {num}");
             __result = count >= num;
             return false;
         } catch (Exception e)
         {
-            Logging.Error?.Log("Encountered exception", e);
+            Log.Main.Error?.Log("Encountered exception", e);
             return true;
         }
     }

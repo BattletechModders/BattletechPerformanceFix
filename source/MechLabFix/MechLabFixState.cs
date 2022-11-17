@@ -40,13 +40,13 @@ internal class MechLabFixState {
         this.instance = instance;
         inventoryWidget = instance.inventoryWidget;
 
-        Logging.Debug?.Log($"StorageInventory contains {instance.storageInventory.Count}");
+        Log.Main.Debug?.Log($"StorageInventory contains {instance.storageInventory.Count}");
 
         if (instance.IsSimGame) {
             instance.originalStorageInventory = instance.storageInventory;
         }
 
-        Logging.Debug?.Log($"Mechbay Patch initialized :simGame? {instance.IsSimGame}");
+        Log.Main.Debug?.Log($"Mechbay Patch initialized :simGame? {instance.IsSimGame}");
 
         List<ListElementController_BASE_NotListView> BuildRawInventory()
             => instance.storageInventory.Select<MechComponentRef, ListElementController_BASE_NotListView>(componentRef => {
@@ -69,7 +69,7 @@ internal class MechLabFixState {
         /* Build a list of data only for all components. */
         rawInventory = Sort(BuildRawInventory());
         // End
-        Logging.Debug?.Log($"[LimitItems] inventory cached in {sw.Elapsed.TotalMilliseconds} ms");
+        Log.Main.Debug?.Log($"[LimitItems] inventory cached in {sw.Elapsed.TotalMilliseconds} ms");
 
         FilterChanged();
     }
@@ -102,11 +102,11 @@ internal class MechLabFixState {
            Since only 7 visual elements are allocated, this is required.
         */
     public List<ListElementController_BASE_NotListView> Sort(List<ListElementController_BASE_NotListView> items) {
-        Logging.Trace?.Log($"Sorting: {items.Select(item => GetRef(item).ComponentDefID).ToArray().Dump(false)}");
+        Log.Main.Trace?.Log($"Sorting: {items.Select(item => GetRef(item).ComponentDefID).ToArray().Dump(false)}");
 
         var sw = Stopwatch.StartNew();
         var cs = inventoryWidget.currentSort;
-        Logging.Debug?.Log($"Sort using {cs.Method.DeclaringType.FullName}::{cs.Method}");
+        Log.Main.Debug?.Log($"Sort using {cs.Method.DeclaringType.FullName}::{cs.Method}");
 
         var iieA = GameObjects.iieTmpA;
         var iieB = GameObjects.iieTmpB;
@@ -124,14 +124,14 @@ internal class MechLabFixState {
             iieB.ItemType = ToDraggableType(r.componentDef);
 
             var res = cs.Invoke(iieA, iieB);
-            Logging.Trace?.Log($"Compare {iieA.ComponentRef.ComponentDefID}({iieA != null},{iieA.controller.ItemWidget != null}) & {iieB.ComponentRef.ComponentDefID}({iieB != null},{iieB.controller.ItemWidget != null}) -> {res}");
+            Log.Main.Trace?.Log($"Compare {iieA.ComponentRef.ComponentDefID}({iieA != null},{iieA.controller.ItemWidget != null}) & {iieB.ComponentRef.ComponentDefID}({iieB != null},{iieB.controller.ItemWidget != null}) -> {res}");
             return res;
         });
 
         var delta = sw.Elapsed.TotalMilliseconds;
-        Logging.Info?.Log($"Sorted in {delta} ms");
+        Log.Main.Info?.Log($"Sorted in {delta} ms");
 
-        Logging.Trace?.Log($"Sorted: {tmp.Select(item => GetRef(item).ComponentDefID).ToArray().Dump(false)}");
+        Log.Main.Trace?.Log($"Sorted: {tmp.Select(item => GetRef(item).ComponentDefID).ToArray().Dump(false)}");
 
         return tmp;
     }
@@ -200,8 +200,8 @@ internal class MechLabFixState {
             };
 
             var yes = Extensions.Trap(() => filter.Execute(Enumerable.Repeat(tmpctl, 1)).Any()
-                ,() => { Logging.Error?.Log($"Filtering failed\n{Summary()}\n\n"); return false; });
-            if (!yes) Logging.Debug?.Log($"[Filter] Removing :id {def.Description.Id} :componentType {def.ComponentType} :quantity {item.quantity}");
+                ,() => { Log.Main.Error?.Log($"Filtering failed\n{Summary()}\n\n"); return false; });
+            if (!yes) Log.Main.Debug?.Log($"[Filter] Removing :id {def.Description.Id} :componentType {def.ComponentType} :quantity {item.quantity}");
             return yes;
         }).ToList();
         return current;
@@ -255,21 +255,21 @@ internal class MechLabFixState {
                         var def = (fst?.controller?.componentDef) ?? (fst?.ComponentRef?.Def);
                         var json = Extensions.Trap(() => def.ToJSON());
                         o += "JSON: " + json;
-                        Logging.Error?.Log($"FilterSummary: \n{o}\n\n");
+                        Log.Main.Error?.Log($"FilterSummary: \n{o}\n\n");
                         return 0;
                     });;
                 filterGuard = false;
                 lec.ItemWidget = null;
                 var yes = iw.gameObject.activeSelf == true;
-                if (!yes) Logging.Debug?.Log($"[FilterUsingHBSCode] Removing :id {lec.componentDef.Description.Id} :componentType {lec.componentDef.ComponentType} :quantity {lec.quantity} :tonnage {(inventoryWidget.ParentDropTarget as MechLabPanel)?.activeMechDef?.Chassis?.Tonnage}");
+                if (!yes) Log.Main.Debug?.Log($"[FilterUsingHBSCode] Removing :id {lec.componentDef.Description.Id} :componentType {lec.componentDef.ComponentType} :quantity {lec.quantity} :tonnage {(inventoryWidget.ParentDropTarget as MechLabPanel)?.activeMechDef?.Chassis?.Tonnage}");
                 return yes;
             }).ToList();
             inventoryWidget.localInventory = tmp;
-            Logging.Info?.Log($"Filter took {sw.Elapsed.TotalMilliseconds} ms and resulted in {items.Count} -> {okItems.Count} items");
+            Log.Main.Info?.Log($"Filter took {sw.Elapsed.TotalMilliseconds} ms and resulted in {items.Count} -> {okItems.Count} items");
 
             return okItems;
         } catch (Exception e) {
-            Logging.Error?.Log("Encountered exception", e);
+            Log.Main.Error?.Log("Encountered exception", e);
             return null;
         }
     }
@@ -277,14 +277,14 @@ internal class MechLabFixState {
     public MechComponentRef GetRef(ListElementController_BASE_NotListView lec) {
         if (lec is ListElementController_InventoryWeapon_NotListView lecIw) return lecIw.componentRef;
         if (lec is ListElementController_InventoryGear_NotListView lecIg) return lecIg.componentRef;
-        Logging.Error?.Log("[LimitItems] lec is not gear or weapon: " + lec.GetId());
+        Log.Main.Error?.Log("[LimitItems] lec is not gear or weapon: " + lec.GetId());
         return null;
     }
 
     /* The user has changed a filter, and we rebuild the item cache. */
     public void FilterChanged(bool resetIndex = true) {
         try {
-            Logging.Debug?.Log(string.Format("[LimitItems] Filter changed (reset? {9}):\n  :weapons {0}\n  :equip {1}\n  :ballistic {2}\n  :energy {3}\n  :missile {4}\n  :small {5}\n  :heatsink {6}\n  :jumpjet {7}\n  :upgrade {8}"
+            Log.Main.Debug?.Log(string.Format("[LimitItems] Filter changed (reset? {9}):\n  :weapons {0}\n  :equip {1}\n  :ballistic {2}\n  :energy {3}\n  :missile {4}\n  :small {5}\n  :heatsink {6}\n  :jumpjet {7}\n  :upgrade {8}"
                 , inventoryWidget.filteringWeapons
                 , inventoryWidget.filteringEquipment
                 , inventoryWidget.filterEnabledWeaponBallistic
@@ -306,19 +306,19 @@ internal class MechLabFixState {
             rowToStartLoading = Mathf.Clamp(rowToStartLoading, 0, rowMaxToStartLoading);
             Refresh();
         } catch (Exception e) {
-            Logging.Error?.Log("Encountered exception", e);
+            Log.Main.Error?.Log("Encountered exception", e);
         }
     }
 
     public void Refresh() {
-        Logging.Debug?.Log($"[LimitItems] Refresh: {rowToStartLoading} {filteredInventory.Count} {itemLimit} {inventoryWidget.scrollbarArea.verticalNormalizedPosition}");
+        Log.Main.Debug?.Log($"[LimitItems] Refresh: {rowToStartLoading} {filteredInventory.Count} {itemLimit} {inventoryWidget.scrollbarArea.verticalNormalizedPosition}");
 
         Func<ListElementController_BASE_NotListView, string> pp = lec => $"[id:{GetRef(lec).ComponentDefID},damage:{GetRef(lec).DamageLevel},quantity:{lec.quantity},id:{lec.GetId()}]";
 
         var toShow = filteredInventory.Skip(rowToStartLoading).Take(itemLimit).ToList();
         var icc = GameObjects.ielCache.ToList();
 
-        Logging.Trace?.Log("[LimitItems] Showing: " + string.Join(", ", toShow.Select(pp).ToArray()));
+        Log.Main.Trace?.Log("[LimitItems] Showing: " + string.Join(", ", toShow.Select(pp).ToArray()));
 
         var details = new List<string>();
 
@@ -353,7 +353,7 @@ internal class MechLabFixState {
         LayoutRebuilder.MarkLayoutForRebuild(vlg.GetComponent<RectTransform>());
 
         instance.RefreshInventorySelectability();
-        Logging.Trace?.Log($"[LimitItems] RefreshDone dummystart {padding} vnp {inventoryWidget.scrollbarArea.verticalNormalizedPosition} lli {"(" + string.Join(", ", details.ToArray()) + ")"}");
+        Log.Main.Trace?.Log($"[LimitItems] RefreshDone dummystart {padding} vnp {inventoryWidget.scrollbarArea.verticalNormalizedPosition} lli {"(" + string.Join(", ", details.ToArray()) + ")"}");
     }
 
     public static readonly int itemsOnScreen = 7;

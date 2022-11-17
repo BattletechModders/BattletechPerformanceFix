@@ -14,7 +14,7 @@ public class LoadFixes : Feature
         if (AppDomain.CurrentDomain.GetAssemblies()
             .Any(asm => asm.GetName().Name == "Turbine"))
         {
-            Logging.Info?.Log("LoadFixes disabled (Turbine is installed, and faster than LoadFixes)");
+            Log.Main.Info?.Log("LoadFixes disabled (Turbine is installed, and faster than LoadFixes)");
         }
         else
         {

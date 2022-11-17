@@ -55,40 +55,40 @@ public static class Main
 
         var allwant = alwaysOn.Concat(want);
 
-        Logging.Info?.Log("Features ----------");
+        Log.Main.Info?.Log("Features ----------");
         foreach (var feature in allwant)
         {
-            Logging.Info?.Log($"Feature {feature.Key.Name} is {(feature.Value ? "ON" : "OFF")}");
+            Log.Main.Info?.Log($"Feature {feature.Key.Name} is {(feature.Value ? "ON" : "OFF")}");
         }
-        Logging.Info?.Log("Patches ----------");
+        Log.Main.Info?.Log("Patches ----------");
         foreach (var feature in allwant)
         {
             if (feature.Value) {
                 try
                 {
-                    Logging.Info?.Log($"Feature {feature.Key.Name}:");
+                    Log.Main.Info?.Log($"Feature {feature.Key.Name}:");
                     var f = (Feature)AccessTools.CreateInstance(feature.Key);
                     f.Activate();
                 } catch (Exception e)
                 {
-                    Logging.Error?.Log($"Failed to activate feature {feature.Key} with:\n {e}\n");
+                    Log.Main.Error?.Log($"Failed to activate feature {feature.Key} with:\n {e}\n");
                 }
             }
         }
-        Logging.Info?.Log("Runtime ----------");
+        Log.Main.Info?.Log("Runtime ----------");
 
         harmony.PatchAll(Assembly.GetExecutingAssembly());
 
-        Logging.Info?.Log("Patch out sensitive data log dumps");
+        Log.Main.Info?.Log("Patch out sensitive data log dumps");
         new DisableSensitiveDataLogDump().Activate();
     }
 
     public static MethodBase CheckPatch(MethodBase meth, params string[] sha256s)
     {
-        Logging.Trace?.Log("CheckPatch is NYI");
+        Log.Main.Trace?.Log("CheckPatch is NYI");
         if (meth == null)
         {
-            Logging.Error?.Log("A CheckPatch recieved a null method, this is fatal");
+            Log.Main.Error?.Log("A CheckPatch recieved a null method, this is fatal");
         }
 
         return meth;
@@ -109,7 +109,7 @@ public static class Main
 
         if (settingsEx != null)
         {
-            Logging.Warning?.Log("Settings file is invalid or missing, using defaults", settingsEx);
+            Log.Main.Warning?.Log("Settings file is invalid or missing, using defaults", settingsEx);
         }
     }
 }
