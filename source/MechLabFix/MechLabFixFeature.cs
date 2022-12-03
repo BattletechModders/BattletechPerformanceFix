@@ -212,8 +212,9 @@ internal class MechLabFixFeature : Feature {
             return false;
         }
 
-        Log.Main.Debug?.Log("Existing quantity change {quantity}");
-        lec.ModifyQuantity(-quantity);
+        const int change = -1;
+        Log.Main.Debug?.Log($"OnRemoveItem quantity={lec.quantity} change={change}");
+        lec.ModifyQuantity(change);
         if (lec.quantity < 1)
         {
             state.rawInventory.Remove(lec);
