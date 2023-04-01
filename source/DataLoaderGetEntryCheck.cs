@@ -10,23 +10,16 @@ public class DataLoaderGetEntryCheck : Feature
 {
     public void Activate()
     {
-        var p = nameof(GetEntry);
-
-        var getentry = Main.CheckPatch( AccessTools.Method(typeof(DataLoader), p)
-            , "17104bca745ea14636548c5a2647770edfdeb28808986dafcd721ae0b6971e54");
-
-        var m = new HarmonyMethod(typeof(DataLoaderGetEntryCheck), p);
-        Main.harmony.Patch( getentry
-            , null
-            , null
-            , m);
+        Main.harmony.PatchAll(typeof(DataLoaderGetEntryCheck));
     }
 
     static DateTime dummyTime = DateTime.UtcNow;
 
     public static DateTime GetLastWriteTimeUtcStub(string path) => dummyTime;
     public static bool ExistsStub(string path) => true;
-   
+
+    [HarmonyTranspiler]
+    [HarmonyPatch(typeof(DataLoader), nameof(DataLoader.GetEntry))]
     public static IEnumerable<CodeInstruction> GetEntry(IEnumerable<CodeInstruction> ins)
     {
         return ins.MethodReplacer( AccessTools.Method(typeof(File), nameof(File.Exists))

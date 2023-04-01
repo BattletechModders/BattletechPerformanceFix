@@ -18,16 +18,21 @@ class ShaderDependencyOverride : Feature
 {
     public void Activate()
     {
-        var t = nameof(WithShaderDeps);
-        "IsBundleLoaded".Pre<AssetBundleManager>(nameof(GetManager));
-        "GenerateWebRequest".Pre<AssetBundleManager>(nameof(GetManager));
-        "IsBundleLoaded".Transpile<AssetBundleManager>(t);
-        "GenerateWebRequest".Transpile<AssetBundleManager>(t);
+        Main.harmony.PatchAll(typeof(ShaderDependencyOverride));
     }
 
-    public static AssetBundleManager manager;
-    public static void GetManager(AssetBundleManager __instance)
+    private static AssetBundleManager manager;
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(AssetBundleManager), nameof(AssetBundleManager.IsBundleLoaded))]
+    [HarmonyPatch(typeof(AssetBundleManager), nameof(AssetBundleManager.GenerateWebRequest))]
+    public static void GetManager(ref bool __runOriginal, AssetBundleManager __instance)
     {
+        if (!__runOriginal)
+        {
+            return;
+        }
+
         if (manager == null)
         {
             Log.Main.Debug?.Log("Found bundle manager");
@@ -46,6 +51,9 @@ class ShaderDependencyOverride : Feature
         else return deps;
     }
 
+    [HarmonyTranspiler]
+    [HarmonyPatch(typeof(AssetBundleManager), nameof(AssetBundleManager.IsBundleLoaded))]
+    [HarmonyPatch(typeof(AssetBundleManager), nameof(AssetBundleManager.GenerateWebRequest))]
     public static IEnumerable<CodeInstruction> WithShaderDeps(IEnumerable<CodeInstruction> ins)
     {
         return ins.Select(i =>

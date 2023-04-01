@@ -10,27 +10,12 @@ namespace BattletechPerformanceFix.MechLabFix;
 
 internal class MechLabFixFeature : Feature {
     public void Activate() {
-        "InitWidgets".Transpile<MechLabPanel>();
-        "InitWidgets".Pre<MechLabPanel>();
-        "PopulateInventory".Pre<MechLabPanel>();
-        "MechCanEquipItem".Pre<MechLabPanel>();
-
-        "LateUpdate".Pre<UnityEngine.UI.ScrollRect>();
-
-        "ClearInventory".Pre<MechLabInventoryWidget>();
-        "OnAddItem".Pre<MechLabInventoryWidget>();
-        "OnRemoveItem".Pre<MechLabInventoryWidget>();
-        "OnItemGrab".Pre<MechLabInventoryWidget>();
-        "ApplyFiltering".Pre<MechLabInventoryWidget>("ApplyFiltering_Pre", Priority.First);
-        "ApplySorting".Pre<MechLabInventoryWidget>("ApplySorting_Pre", Priority.First);
-        // "RemoveDataItem".Pre<MechLabInventoryWidget>();
-
-        // Fix some annoying seemingly vanilla log spam
-        "OnDestroy".Pre<InventoryItemElement_NotListView>(iel => { if(iel.iconMech != null) iel.iconMech.sprite = null;
-            return false; });
+        Main.harmony.PatchAll(typeof(MechLabFixFeature));
     }
 
 #region fix for unused shop clones
+    [HarmonyTranspiler]
+    [HarmonyPatch(typeof(MechLabPanel), nameof(MechLabPanel.InitWidgets))]
     public static IEnumerable<CodeInstruction> InitWidgets_Transpile(IEnumerable<CodeInstruction> instructions)
     {
         var to = AccessTools.Method(typeof(MechLabFixFeature), nameof(CreateUIModule));
@@ -57,8 +42,15 @@ internal class MechLabFixFeature : Feature {
         }
     }
 
-    public static void InitWidgets_Pre(MechLabPanel __instance)
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(MechLabPanel), nameof(MechLabPanel.InitWidgets))]
+    public static void InitWidgets_Pre(ref bool __runOriginal, MechLabPanel __instance)
     {
+        if (!__runOriginal)
+        {
+            return;
+        }
+
         Log.Main.Debug?.Log("[LimitItems] InitWidgets_Pre");
         try {
             if (__instance.Shop != null)
@@ -74,8 +66,15 @@ internal class MechLabFixFeature : Feature {
 
     internal static MechLabFixState state;
 
-    public static bool PopulateInventory_Pre(MechLabPanel __instance)
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(MechLabPanel), nameof(MechLabPanel.PopulateInventory))]
+    public static void PopulateInventory_Pre(ref bool __runOriginal, MechLabPanel __instance)
     {
+        if (!__runOriginal)
+        {
+            return;
+        }
+
         Log.Main.Debug?.Log("[LimitItems] PopulateInventory_Pre");
         // return;
         try
@@ -85,11 +84,18 @@ internal class MechLabFixFeature : Feature {
         } catch(Exception e) {
             Log.Main.Error?.Log("Encountered exception", e);
         }
-        return false;
+        __runOriginal = false;
     }
 
-    public static void ClearInventory_Pre(MechLabInventoryWidget __instance)
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(MechLabInventoryWidget), nameof(MechLabInventoryWidget.ClearInventory))]
+    public static void ClearInventory_Pre(ref bool __runOriginal, MechLabInventoryWidget __instance)
     {
+        if (!__runOriginal)
+        {
+            return;
+        }
+
         Log.Main.Debug?.Log("[LimitItems] ClearInventory_Pre");
         try
         {
@@ -106,8 +112,15 @@ internal class MechLabFixFeature : Feature {
         }
     }
 
-    public static void LateUpdate_Pre(UnityEngine.UI.ScrollRect __instance)
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(UnityEngine.UI.ScrollRect), "LateUpdate")]
+    public static void LateUpdate_Pre(ref bool __runOriginal, UnityEngine.UI.ScrollRect __instance)
     {
+        if (!__runOriginal)
+        {
+            return;
+        }
+
         try
         {
             if (state != null && state.inventoryWidget.scrollbarArea == __instance) {
@@ -126,8 +139,15 @@ internal class MechLabFixFeature : Feature {
         }
     }
 
-    public static bool OnAddItem_Pre(MechLabInventoryWidget __instance, IMechLabDraggableItem item)
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(MechLabInventoryWidget), nameof(MechLabInventoryWidget.OnAddItem))]
+    public static void OnAddItem_Pre(ref bool __runOriginal, MechLabInventoryWidget __instance, IMechLabDraggableItem item)
     {
+        if (!__runOriginal)
+        {
+            return;
+        }
+
         Log.Main.Debug?.Log("[LimitItems] OnAddItem_Pre");
         if (state != null && state.inventoryWidget == __instance) {
             try {
@@ -161,31 +181,19 @@ internal class MechLabFixFeature : Feature {
             } catch(Exception e) {
                 Log.Main.Error?.Log("Encountered exception", e);
             }
-            return false;
+            __runOriginal = false;
         }
-        return true;
     }
 
-    public static bool RemoveDataItem_Prefix(MechLabInventoryWidget __instance, InventoryDataObject_BASE ItemData, ref bool __result)
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(MechLabInventoryWidget), nameof(MechLabInventoryWidget.OnRemoveItem))]
+    public static void OnRemoveItem_Pre(ref bool __runOriginal, MechLabInventoryWidget __instance, IMechLabDraggableItem item)
     {
-        Log.Main.Debug?.Log("[LimitItems] RemoveDataItem_Prefix");
-        try
+        if (!__runOriginal)
         {
-            if (state != null && state.inventoryWidget == __instance && __instance.IsSimGame)
-            {
-                __result = RemoveItemQuantity( state.FetchItem(ItemData.componentDef), ItemData.quantity);
-            }
-            return false;
+            return;
         }
-        catch (Exception e)
-        {
-            Log.Main.Error?.Log("Encountered exception", e);
-        }
-        return true;
-    }
 
-    public static bool OnRemoveItem_Pre(MechLabInventoryWidget __instance, IMechLabDraggableItem item)
-    {
         Log.Main.Debug?.Log("[LimitItems] OnRemoveItem_Pre");
         if (state != null && state.inventoryWidget == __instance) {
             try {
@@ -194,9 +202,8 @@ internal class MechLabFixFeature : Feature {
             } catch(Exception e) {
                 Log.Main.Error?.Log("Encountered exception", e);
             }
-            return false;
+            __runOriginal = false;
         }
-        return true;
     }
 
     private static bool RemoveItemQuantity(ListElementController_BASE_NotListView lec, int quantity)
@@ -223,17 +230,23 @@ internal class MechLabFixFeature : Feature {
         return true;
     }
 
-    public static bool ApplyFiltering_Pre(MechLabInventoryWidget __instance, bool refreshPositioning)
+    [HarmonyPrefix]
+    [HarmonyPriority(Priority.First)]
+    [HarmonyPatch(typeof(MechLabInventoryWidget), nameof(MechLabInventoryWidget.ApplyFiltering))]
+    public static void ApplyFiltering_Pre(ref bool __runOriginal, MechLabInventoryWidget __instance, bool refreshPositioning)
     {
+        if (!__runOriginal)
+        {
+            return;
+        }
+
         Log.Main.Debug?.Log("[LimitItems] ApplyFiltering_Pre");
         try
         {
             if (state != null && state.inventoryWidget == __instance && !MechLabFixState.filterGuard) {
                 Log.Main.Debug?.Log($"OnApplyFiltering (refresh-pos? {refreshPositioning})");
                 state.FilterChanged(refreshPositioning);
-                return false;
-            } else {
-                return true;
+                __runOriginal = false;
             }
         }
         catch (Exception e)
@@ -243,8 +256,16 @@ internal class MechLabFixFeature : Feature {
         }
     }
 
-    public static bool ApplySorting_Pre(MechLabInventoryWidget __instance)
+    [HarmonyPrefix]
+    [HarmonyPriority(Priority.First)]
+    [HarmonyPatch(typeof(MechLabInventoryWidget), nameof(MechLabInventoryWidget.ApplySorting))]
+    public static void ApplySorting_Pre(ref bool __runOriginal, MechLabInventoryWidget __instance)
     {
+        if (!__runOriginal)
+        {
+            return;
+        }
+
         Log.Main.Debug?.Log("[LimitItems] ApplySorting_Pre");
         try
         {
@@ -254,9 +275,7 @@ internal class MechLabFixFeature : Feature {
                 var cst = _cs.Method;
                 Log.Main.Debug?.Log($"OnApplySorting using {cst.DeclaringType.FullName}::{cst}");
                 state.FilterChanged(false);
-                return false;
-            } else {
-                return true;
+                __runOriginal = false;
             }
         }
         catch (Exception e)
@@ -266,8 +285,15 @@ internal class MechLabFixFeature : Feature {
         }
     }
 
-    public static bool MechCanEquipItem_Pre(InventoryItemElement_NotListView item)
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(MechLabPanel), nameof(MechLabPanel.MechCanEquipItem))]
+    public static void MechCanEquipItem_Pre(ref bool __runOriginal, InventoryItemElement_NotListView item)
     {
+        if (!__runOriginal)
+        {
+            return;
+        }
+
         Log.Main.Trace?.Log("[LimitItems] MechCanEquipItem_Pre");
 
         // undo "fix NRE within Pool()" from earlier
@@ -277,11 +303,18 @@ internal class MechLabFixFeature : Feature {
         }
 
         // no idea why this is here, just a NRE fix for vanilla?
-        return item.ComponentRef != null;
+        __runOriginal = item.ComponentRef != null;
     }
 
-    public static void OnItemGrab_Pre(MechLabInventoryWidget __instance, ref IMechLabDraggableItem item)
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(MechLabInventoryWidget), nameof(MechLabInventoryWidget.OnItemGrab))]
+    public static void OnItemGrab_Pre(ref bool __runOriginal, MechLabInventoryWidget __instance, ref IMechLabDraggableItem item)
     {
+        if (!__runOriginal)
+        {
+            return;
+        }
+
         Log.Main.Debug?.Log("[LimitItems] OnItemGrab_Pre");
         try
         {
@@ -305,5 +338,21 @@ internal class MechLabFixFeature : Feature {
             Log.Main.Error?.Log("Encountered exception", e);
             throw;
         }
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(InventoryItemElement_NotListView), nameof(InventoryItemElement_NotListView.OnDestroy))]
+    public static void OnDestroy_Pre(ref bool __runOriginal, InventoryItemElement_NotListView __instance)
+    {
+        if (!__runOriginal)
+        {
+            return;
+        }
+
+        if (__instance.iconMech != null)
+        {
+            __instance.iconMech.sprite = null;
+        }
+        __runOriginal = false;
     }
 }

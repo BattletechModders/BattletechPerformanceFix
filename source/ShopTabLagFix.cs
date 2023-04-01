@@ -6,16 +6,11 @@ public class ShopTabLagFix : Feature
 {
     public void Activate()
     {
-        var asi = Main.CheckPatch(AccessTools.Method(typeof(SG_Shop_Screen), nameof(SG_Shop_Screen.AddShopInventory))
-            , "f07ff50a8bd1b049d0ad576720c91c2b473d240e203f046ba4bd6ed4ca03f653");
-        var aiti = Main.CheckPatch(AccessTools.Method(typeof(MechLabInventoryWidget_ListView), nameof(MechLabInventoryWidget_ListView.AddItemToInventory))
-            , "204c93ea7a8f7474dd1e185f3b99a3da63c0d0bbd44eeb94a1378a9f1ae9938e");
-
-        Main.harmony.Patch(asi, null, new(AccessTools.Method(typeof(ShopTabLagFix), nameof(OnlySortAtEnd))));
-        Main.harmony.Patch(aiti, new(AccessTools.Method(typeof(ShopTabLagFix), nameof(AddItemToInventory))));
-
+        Main.harmony.PatchAll(typeof(ShopTabLagFix));
     }
 
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(SG_Shop_Screen), nameof(SG_Shop_Screen.AddShopInventory))]
     public static void OnlySortAtEnd(SG_Shop_Screen __instance)
     {
         Log.Main.Debug?.Log("ShopTabLagFix: OnlySortAtEnd");
@@ -25,8 +20,16 @@ public class ShopTabLagFix : Feature
         lv.Sort();
         lv.Refresh();
     }
-    public static bool AddItemToInventory(MechLabInventoryWidget_ListView __instance, InventoryDataObject_BASE ItemData)
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(MechLabInventoryWidget_ListView), nameof(MechLabInventoryWidget_ListView.AddItemToInventory))]
+    public static void AddItemToInventory(ref bool __runOriginal, MechLabInventoryWidget_ListView __instance, InventoryDataObject_BASE ItemData)
     {
+        if (!__runOriginal)
+        {
+            return;
+        }
+
         Log.Main.Debug?.Log("ShopTabLagFix: AddItemToInventory");
         var _this = __instance;
         var _items = _this.ListView.Items;
@@ -50,6 +53,6 @@ public class ShopTabLagFix : Feature
             // HBSLoopScroll 219-228
             _items.Add(ItemData);
         }
-        return false;
+        __runOriginal = false;
     }
 }

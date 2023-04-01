@@ -10,7 +10,7 @@ namespace BattletechPerformanceFix;
 
 public static class Main
 {
-    public static HarmonyInstance harmony;
+    public static Harmony harmony;
 
     public static readonly string ModName = "BattletechPerformanceFix";
     public static readonly string ModPack = "com.github.m22spencer";
@@ -26,12 +26,11 @@ public static class Main
 
         LoadSettingsAndSetupLogger();
 
-        harmony = HarmonyInstance.Create(ModFullName);
+        harmony = new Harmony(ModFullName);
 
         var allFeatures = new Dictionary<Type, bool> {
             { typeof(LocalizationPatches), true },
             { typeof(MechLabFixFeature), false },
-            { typeof(LoadFixes), true },
             { typeof(NoSalvageSoftlock), true },
             { typeof(DataLoaderGetEntryCheck), true },
             { typeof(ShopTabLagFix), true },

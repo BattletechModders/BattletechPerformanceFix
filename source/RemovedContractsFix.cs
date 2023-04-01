@@ -7,11 +7,18 @@ class RemovedContractsFix : Feature
 {
     public void Activate()
     {
-        "Rehydrate".Pre<SimGameState>();
+        Main.harmony.PatchAll(typeof(RemovedContractsFix));
     }
 
-    static void Rehydrate_Pre(SimGameState __instance, GameInstanceSave gameInstanceSave)
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(SimGameState), nameof(SimGameState.Rehydrate))]
+    static void Rehydrate_Pre(ref bool __runOriginal, SimGameState __instance, GameInstanceSave gameInstanceSave)
     {
+        if (!__runOriginal)
+        {
+            return;
+        }
+
         var contractOverrides = __instance.DataManager.ContractOverrides;
         gameInstanceSave.SimGameSave.ContractBits.RemoveAll(item => !contractOverrides.Exists(item.conName));
     }

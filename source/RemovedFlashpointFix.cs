@@ -7,12 +7,19 @@ class RemovedFlashpointFix : Feature
 {
     public void Activate()
     {
-        "Rehydrate".Pre<SimGameState>();
+        Main.harmony.PatchAll(typeof(RemovedFlashpointFix));
     }
 
 
-    static void Rehydrate_Pre(SimGameState __instance, GameInstanceSave gameInstanceSave)
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(SimGameState), nameof(SimGameState.Rehydrate))]
+    static void Rehydrate_Pre(ref bool __runOriginal, SimGameState __instance, GameInstanceSave gameInstanceSave)
     {
+        if (!__runOriginal)
+        {
+            return;
+        }
+
         gameInstanceSave.SimGameSave.AvailableFlashpointList.RemoveAll(item => item.Def == null);
     }
 

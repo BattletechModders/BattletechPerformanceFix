@@ -1,8 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using BattleTech;
-using System.Reflection.Emit;
-using static BattletechPerformanceFix.Extensions;
+﻿using BattleTech;
 
 namespace BattletechPerformanceFix;
 
@@ -10,25 +6,19 @@ class DisableSensitiveDataLogDump : Feature
 {
     public void Activate()
     {
-        Main.harmony.Patch(AccessTools.Method(typeof(UnityGameInstance), nameof(OnInternetConnectivityResult))
-            , new(typeof(DisableSensitiveDataLogDump), nameof(OnInternetConnectivityResult)));
-
-        /* Mods are hooked too late to guard this
-        Control.harmony.Patch(AccessTools.Method(typeof(SteamManager), nameof(Awake))
-                             , null, null, new HarmonyMethod(typeof(DisableSensitiveDataLogDump), nameof(Awake)));
-                             */
+        Main.harmony.PatchAll(typeof(DisableSensitiveDataLogDump));
     }
 
-    public static bool OnInternetConnectivityResult(UnityGameInstance __instance, bool success)
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(UnityGameInstance), nameof(UnityGameInstance.OnInternetConnectivityResult))]
+    public static void OnInternetConnectivityResult(ref bool __runOriginal, UnityGameInstance __instance, bool success)
     {
-        new Traverse(__instance).Property("InternetAvailable").SetValue(success);
-        return false;
-    }
+        if (!__runOriginal)
+        {
+            return;
+        }
 
-    public static IEnumerable<CodeInstruction> Awake(IEnumerable<CodeInstruction> ins)
-    {
-        var insl = ins.ToList();
-        var num = insl.Count;
-        return insl.Take(insl.Count - 8).Concat(Sequence(new CodeInstruction(OpCodes.Ret)));
+        __instance.InternetAvailable = success;
+        __runOriginal = false;
     }
 }

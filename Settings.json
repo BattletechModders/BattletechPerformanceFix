@@ -2,7 +2,6 @@
   "features": {
     "LocalizationPatches": false,
     "MechLabFixFeature": false,
-    "LoadFixes": false,
     "NoSalvageSoftlock": false,
     "DataLoaderGetEntryCheck": false,
     "ShopTabLagFix": false,

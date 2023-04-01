@@ -1,5 +1,4 @@
-﻿using System;
-using BattleTech.UI;
+﻿using BattleTech.UI;
 
 namespace BattletechPerformanceFix;
 
@@ -7,35 +6,33 @@ public class NoSalvageSoftlock : Feature
 {
     public void Activate()
     {
-        var hap = Main.CheckPatch(AccessTools.Method(typeof(AAR_SalvageChosen), nameof(AAR_SalvageChosen.HasAllPriority))
-            , "80d43f27b8537a10099fd1ebceb4b6961549f30518c00de53fcf38c27623f7ec");
-        Main.harmony.Patch(hap
-            , new(typeof(NoSalvageSoftlock), nameof(NoSalvageSoftlock.HasAllPriority)), null);
+        Main.harmony.PatchAll(typeof(NoSalvageSoftlock));
     }
 
-    public static bool HasAllPriority(AAR_SalvageChosen __instance, ref bool __result)
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(AAR_SalvageChosen), nameof(AAR_SalvageChosen.HasAllPriority))]
+    [HarmonyWrapSafe]
+    public static void HasAllPriority(ref bool __runOriginal, AAR_SalvageChosen __instance, ref bool __result)
     {
-        try
+        if (!__runOriginal)
         {
-            var negotiated = __instance.contract.FinalPrioritySalvageCount;
-            var totalSalvageMadeAvailable = __instance.parent.TotalSalvageMadeAvailable;
-            var count = __instance.PriorityInventory.Count;
-            var num = negotiated;
-            if (num > totalSalvageMadeAvailable)
-            {
-                num = totalSalvageMadeAvailable;
-            }
-            if (num > 7)
-            {
-                num = 7;
-            }
-            Log.Main.Debug?.Log($"HasAllPriority :negotiated {negotiated} :available {totalSalvageMadeAvailable} :selected {count} :clamped {num}");
-            __result = count >= num;
-            return false;
-        } catch (Exception e)
-        {
-            Log.Main.Error?.Log("Encountered exception", e);
-            return true;
+            return;
         }
+
+        var negotiated = __instance.contract.FinalPrioritySalvageCount;
+        var totalSalvageMadeAvailable = __instance.parent.TotalSalvageMadeAvailable;
+        var count = __instance.PriorityInventory.Count;
+        var num = negotiated;
+        if (num > totalSalvageMadeAvailable)
+        {
+            num = totalSalvageMadeAvailable;
+        }
+        if (num > 7)
+        {
+            num = 7;
+        }
+        Log.Main.Debug?.Log($"HasAllPriority :negotiated {negotiated} :available {totalSalvageMadeAvailable} :selected {count} :clamped {num}");
+        __result = count >= num;
+        __runOriginal = false;
     }
 }

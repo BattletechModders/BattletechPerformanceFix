@@ -11,18 +11,24 @@ class DisableDeployAudio : Feature
 {
     public void Activate()
     {
-        var ccc = nameof(LanceConfiguratorPanel.ContinueConfirmClicked);
-
-        ccc.Pre<LanceConfiguratorPanel>();
-        ccc.Post<LanceConfiguratorPanel>();
+        Main.harmony.PatchAll(typeof(DisableDeployAudio));
     }
-        
-    public static void ContinueConfirmClicked_Pre(ref float __state)
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(LanceConfiguratorPanel), nameof(LanceConfiguratorPanel.ContinueConfirmClicked))]
+    public static void ContinueConfirmClicked_Pre(ref bool __runOriginal, ref float __state)
     {
+        if (!__runOriginal)
+        {
+            return;
+        }
+
         __state = AudioEventManager.VoiceVolume;
         AudioEventManager.VoiceVolume = 0;
     }
 
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(LanceConfiguratorPanel), nameof(LanceConfiguratorPanel.ContinueConfirmClicked))]
     public static void ContinueConfirmClicked_Post(ref float __state)
     {
         AudioEventManager.VoiceVolume = __state;

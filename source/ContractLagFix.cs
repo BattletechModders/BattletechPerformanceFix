@@ -13,35 +13,13 @@ class ContractLagFix : Feature
 {
     public void Activate()
     {
-        Assembly.GetAssembly(typeof(ObjectiveRef))
-            .GetTypes()
-            //.Where(ty => ty != null && ty.BaseType != null && ty.BaseType.FullName.Contains("EncounterObjectRef"))
-            .Where(ty => ty != null && ty.BaseType != null && ty.BaseType.Name.Contains("EncounterObjectRef"))
-            .ToList()
-            .ForEach(ty =>
-            {
-                var meth = AccessTools.Method(ty.BaseType, "UpdateEncounterObjectRef");
-
-                var tpatch = new HarmonyMethod(typeof(ContractLagFix), nameof(Transpile));
-                tpatch.prioritiy = Priority.First;
-
-                Main.harmony.Patch(meth
-                    , new(typeof(ContractLagFix), nameof(Pre))
-                    , new(typeof(ContractLagFix), nameof(Post))
-                    , tpatch);
-            });
-
-        Log.Main.Debug?.Log($"EncounterLayerData ctors {typeof(EncounterLayerData).GetConstructors().Count()}");
-        typeof(EncounterLayerData).GetConstructors()
-            .ToList()
-            .ForEach(con =>
-                Main.harmony.Patch(con
-                    , null, new(typeof(ContractLagFix), nameof(EncounterLayerData_Constructor))));
-
+        Main.harmony.PatchAll(typeof(ContractLagFix));
     }
 
     static Stopwatch sw = new();
 
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(EncounterLayerData), MethodType.Constructor)]
     public static void EncounterLayerData_Constructor(EncounterLayerData __instance)
     {
         eld_cache = eld_cache.Where(c => c != null).ToList();
@@ -54,7 +32,7 @@ class ContractLagFix : Feature
     {
         return Trap(() =>
         {
-            var cached = eld_cache.Where(c => c != null && c.isActiveAndEnabled).FirstOrDefault();
+            var cached = eld_cache.FirstOrDefault(c => c != null && c.isActiveAndEnabled);
 
             if (Main.settings.WantContractsLagFixVerify) {
                 Log.Main.Trace?.Log("Verify ELD");
@@ -78,28 +56,21 @@ class ContractLagFix : Feature
         });
     }
 
+    [HarmonyTranspiler]
+    [HarmonyPriority(Priority.First)]
+    [HarmonyPatch(typeof(EncounterObjectRef), nameof(EncounterObjectRef.UpdateEncounterObjectRef))]
     public static IEnumerable<CodeInstruction> Transpile(IEnumerable<CodeInstruction> ins)
     {
         return ins.SelectMany(i =>
         {
             if (i.opcode == Call && (i.operand as MethodInfo).Name.StartsWith("FindObjectOfType"))
             {
-                i.operand = AccessTools.Method(typeof(ContractLagFix), "CachedEncounterLayerData");
+                i.operand = AccessTools.Method(typeof(ContractLagFix), nameof(CachedEncounterLayerData));
                 return Sequence(i);
             } else
             {
                 return Sequence(i);
             }
         });
-    }
-
-    public static void Pre()
-    {
-        sw.Start();
-    }
-    public static void Post()
-    {
-        sw.Stop();
-        //LogDebug("UpdateEncounterObjectRef {0}: {1} ms total", ct++, sw.Elapsed.TotalMilliseconds);
     }
 }

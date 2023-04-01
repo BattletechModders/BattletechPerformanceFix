@@ -6,28 +6,31 @@ namespace BattletechPerformanceFix;
 class LocalizationPatches : Feature
 {
     // If enabled, runs both vanilla & bfix versions, checking for desyncs.
-    public static bool Verify = false;
+    private static bool Verify = false;
     public void Activate()
     {
-        "StringForKeyFormat".Pre<StringsProviderBase<object>>();
-        "StringForKeyFormat".Post<StringsProviderBase<object>>();
+        Main.harmony.PatchAll(typeof(LocalizationPatches));
     }
 
     // String with non number text between {} is rare, so only do the repair if format fails.
-    public static bool StringForKeyFormat_Pre(StringsProviderBase<object> __instance, string key, ref string __result, ref (bool,string)? __state, params object[] args)
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(StringsProviderBase<object>), nameof(StringsProviderBase<object>.StringForKeyFormat))]
+    [HarmonyWrapSafe]
+    public static void StringForKeyFormat_Pre(ref bool __runOriginal, StringsProviderBase<object> __instance, string key, ref string __result, ref (bool,string)? __state, params object[] args)
     {
-        var text = __instance.StringForKey(key);
-        try
+        if (!__runOriginal)
         {
-            var formatted = key == null ? "" : (string.Format(text, args) ?? "");
-            __state = (true, __result = formatted);
-            return Verify;
-        } catch(Exception)
-        {
-            return true;
+            return;
         }
+
+        var text = __instance.StringForKey(key);
+        var formatted = key == null ? "" : (string.Format(text, args) ?? "");
+        __state = (true, __result = formatted);
+        __runOriginal = Verify;
     }
 
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(StringsProviderBase<object>), nameof(StringsProviderBase<object>.StringForKeyFormat))]
     public static void StringForKeyFormat_Post(StringsProviderBase<object> __instance, string key, ref string __result, ref (bool,string)? __state, params object[] args)
     {
         if (Verify && __state != null && __result != __state?.Item2)
