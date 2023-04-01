@@ -1,6 +1,4 @@
-﻿using Harmony;
-
-namespace BattletechPerformanceFix;
+﻿namespace BattletechPerformanceFix;
 
 // BattleTech disables logging during load. Not sure why.
 //   this re-enables it to give more information about errors in log.

@@ -4,7 +4,6 @@ using System.Reflection;
 using System.Reflection.Emit;
 using BattleTech;
 using BattleTech.UI;
-using Harmony;
 using UnityEngine;
 
 namespace BattletechPerformanceFix.MechLabFix;

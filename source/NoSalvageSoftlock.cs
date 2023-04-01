@@ -1,5 +1,4 @@
-﻿using Harmony;
-using System;
+﻿using System;
 using BattleTech.UI;
 
 namespace BattletechPerformanceFix;

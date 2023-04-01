@@ -2,7 +2,6 @@
 using System.Linq;
 using BattleTech;
 using BattleTech.Framework;
-using Harmony;
 using System.Reflection;
 using System.Diagnostics;
 using static System.Reflection.Emit.OpCodes;

@@ -1,4 +1,3 @@
-using Harmony;
 using BattleTech.UI;
 
 namespace BattletechPerformanceFix;

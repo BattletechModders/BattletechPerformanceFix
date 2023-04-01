@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using Harmony;
 using BattleTech;
 using System.Reflection.Emit;
 using static BattletechPerformanceFix.Extensions;
