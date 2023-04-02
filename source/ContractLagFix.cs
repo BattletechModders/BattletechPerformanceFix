@@ -3,7 +3,6 @@ using System.Linq;
 using BattleTech;
 using BattleTech.Framework;
 using System.Reflection;
-using System.Diagnostics;
 using static System.Reflection.Emit.OpCodes;
 using static BattletechPerformanceFix.Extensions;
 
@@ -14,9 +13,8 @@ class ContractLagFix : Feature
     public void Activate()
     {
         Main.harmony.PatchAll(typeof(ContractLagFix));
+        Main.harmony.PatchAll(typeof(EncounterObjectRef_UpdateEncounterObjectRef_Patch));
     }
-
-    static Stopwatch sw = new();
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(EncounterLayerData), MethodType.Constructor)]
@@ -56,21 +54,29 @@ class ContractLagFix : Feature
         });
     }
 
-    [HarmonyTranspiler]
-    [HarmonyPriority(Priority.First)]
-    [HarmonyPatch(typeof(EncounterObjectRef), nameof(EncounterObjectRef.UpdateEncounterObjectRef))]
-    public static IEnumerable<CodeInstruction> Transpile(IEnumerable<CodeInstruction> ins)
+    public static class EncounterObjectRef_UpdateEncounterObjectRef_Patch
     {
-        return ins.SelectMany(i =>
+        [HarmonyTargetMethods]
+        public static IEnumerable<MethodBase> TargetMethods()
         {
-            if (i.opcode == Call && (i.operand as MethodInfo).Name.StartsWith("FindObjectOfType"))
+            return typeof(ObjectiveRef).Assembly.GetTypes()
+                .Select(t => t.BaseType)
+                .Where(t => t != null && t.Name.StartsWith(nameof(EncounterObjectRef)))
+                .Select(t => AccessTools.Method(t, nameof(EncounterObjectRef.UpdateEncounterObjectRef)));
+        }
+
+        [HarmonyTranspiler]
+        [HarmonyPriority(Priority.First)]
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            foreach (var instruction in instructions)
             {
-                i.operand = AccessTools.Method(typeof(ContractLagFix), nameof(CachedEncounterLayerData));
-                return Sequence(i);
-            } else
-            {
-                return Sequence(i);
+                if (instruction.opcode == Call && instruction.operand is MethodInfo mi && mi.Name.StartsWith("FindObjectOfType"))
+                {
+                    instruction.operand = AccessTools.Method(typeof(ContractLagFix), nameof(CachedEncounterLayerData));
+                }
+                yield return instruction;
             }
-        });
+        }
     }
 }

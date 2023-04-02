@@ -24,7 +24,7 @@ class ShaderDependencyOverride : Feature
     private static AssetBundleManager manager;
 
     [HarmonyPrefix]
-    [HarmonyPatch(typeof(AssetBundleManager), nameof(AssetBundleManager.IsBundleLoaded))]
+    [HarmonyPatch(typeof(AssetBundleManager), nameof(AssetBundleManager.IsBundleLoaded), typeof(string))]
     [HarmonyPatch(typeof(AssetBundleManager), nameof(AssetBundleManager.GenerateWebRequest))]
     public static void GetManager(ref bool __runOriginal, AssetBundleManager __instance)
     {
@@ -52,7 +52,7 @@ class ShaderDependencyOverride : Feature
     }
 
     [HarmonyTranspiler]
-    [HarmonyPatch(typeof(AssetBundleManager), nameof(AssetBundleManager.IsBundleLoaded))]
+    [HarmonyPatch(typeof(AssetBundleManager), nameof(AssetBundleManager.IsBundleLoaded), typeof(string))]
     [HarmonyPatch(typeof(AssetBundleManager), nameof(AssetBundleManager.GenerateWebRequest))]
     public static IEnumerable<CodeInstruction> WithShaderDeps(IEnumerable<CodeInstruction> ins)
     {
