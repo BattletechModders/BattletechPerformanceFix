@@ -18,6 +18,6 @@ jobs:
             -xr!source "-xr!.*"
         )
       release-notes: |
-        Works best with ModTek V3
-        - BattletechPerformanceFix.zip contains the mod
+        BattletechPerformanceFix.zip contains the mod
+        Requires ModTek v4.3 or later.
     secrets: inherit
