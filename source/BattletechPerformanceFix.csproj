@@ -39,6 +39,7 @@
   <ItemGroup>
     <PackageReference Include="Krafs.Publicizer" Version="2.3.0" />
     <Publicize Include="Assembly-CSharp" />
+    <Publicize Include="Dapper.Unity" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="PolySharp" Version="1.15.0">
@@ -63,6 +64,15 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="System.Core">
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Data">
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Dapper.Unity">
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Mono.Data.Sqlite">
       <Private>False</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json">
