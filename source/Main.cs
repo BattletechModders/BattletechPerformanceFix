@@ -43,6 +43,7 @@ public static class Main
             { typeof(DisableSimAnimations), false },
             { typeof(RemovedContractsFix), true },
             { typeof(EnableConsole), false },
+            { typeof(MDDQueryFix), true },
         };
 
         var want = allFeatures.ToDictionary(f => f.Key, f => settings.features.TryGetValue(f.Key.Name, out var userBool) ? userBool : f.Value);
